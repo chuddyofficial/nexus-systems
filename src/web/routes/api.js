@@ -1,9 +1,12 @@
+const path = require('node:path');
+const { execFile } = require('node:child_process');
 const express = require('express');
 const { ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database/db');
 const config = require('../../config');
 const { ensureAuthApi } = require('../middleware/ensureAuth');
 const { ensureGuildAccess, userManagesGuild, requirePermission, requireServerManager } = require('../middleware/ensureGuildAccess');
+const { ensureOwnerApi } = require('../middleware/ensureOwner');
 const { buildEmbedFromData } = require('../../bot/utils/embedBuilder');
 const { performBan, performKick, performTimeout, performWarn, performTempBan } = require('../../bot/utils/modActions');
 const { endGiveawayNow } = require('../../bot/utils/giveaways');
@@ -623,6 +626,123 @@ router.post('/servers/:guildId/giveaways/:id/end', requirePermission('manage_giv
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
+});
+
+// ---- Website Admin (owner-only, site-wide bot control) ----
+router.use('/admin', ensureOwnerApi);
+
+router.get('/admin/stats', (req, res) => {
+  const client = req.app.locals.discordClient;
+  const guilds = [...client.guilds.cache.values()];
+  res.json({
+    tag: client.user?.tag ?? null,
+    online: client.isReady(),
+    ping: Math.round(client.ws.ping),
+    guildCount: guilds.length,
+    totalMembers: guilds.reduce((sum, g) => sum + (g.memberCount || 0), 0),
+    uptimeMs: client.uptime ?? 0,
+    nodeVersion: process.version,
+    memory: process.memoryUsage(),
+    pid: process.pid,
+  });
+});
+
+router.get('/admin/servers', (req, res) => {
+  const client = req.app.locals.discordClient;
+  const guilds = [...client.guilds.cache.values()]
+    .map((g) => ({
+      id: g.id,
+      name: g.name,
+      icon: g.iconURL() || null,
+      memberCount: g.memberCount,
+      ownerId: g.ownerId,
+      joinedAt: g.joinedAt ? g.joinedAt.toISOString() : null,
+    }))
+    .sort((a, b) => b.memberCount - a.memberCount);
+  res.json(guilds);
+});
+
+router.post('/admin/servers/:guildId/leave', async (req, res) => {
+  const client = req.app.locals.discordClient;
+  const guild = client.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Server not found' });
+  await guild.leave();
+  res.json({ ok: true });
+});
+
+router.post('/admin/broadcast', async (req, res) => {
+  const { guildId, channelId, content, embedTitle, embedDescription, embedColor } = req.body;
+  const client = req.app.locals.discordClient;
+  const guild = client.guilds.cache.get(guildId);
+  if (!guild) return res.status(400).json({ error: 'Invalid server' });
+  const channel = guild.channels.cache.get(channelId);
+  if (!channel?.isTextBased()) return res.status(400).json({ error: 'Invalid channel' });
+  if (!content?.trim() && !embedDescription?.trim()) return res.status(400).json({ error: 'Provide a message or an embed description' });
+
+  try {
+    const payload = {};
+    if (content?.trim()) payload.content = content.trim();
+    if (embedDescription?.trim()) {
+      payload.embeds = [
+        new EmbedBuilder().setTitle(embedTitle?.trim() || null).setDescription(embedDescription.trim()).setColor(embedColor || config.brandColor),
+      ];
+    }
+    await channel.send(payload);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Best-effort broadcast to every server's mod log channel (skips any server
+// that hasn't configured one — there's no single "announcements" channel
+// guaranteed to exist across every guild).
+router.post('/admin/broadcast-all', async (req, res) => {
+  const { content, embedTitle, embedDescription, embedColor } = req.body;
+  if (!content?.trim() && !embedDescription?.trim()) return res.status(400).json({ error: 'Provide a message or an embed description' });
+  const client = req.app.locals.discordClient;
+
+  const payload = {};
+  if (content?.trim()) payload.content = content.trim();
+  if (embedDescription?.trim()) {
+    payload.embeds = [
+      new EmbedBuilder().setTitle(embedTitle?.trim() || null).setDescription(embedDescription.trim()).setColor(embedColor || config.brandColor),
+    ];
+  }
+
+  let sent = 0;
+  let skipped = 0;
+  for (const guild of client.guilds.cache.values()) {
+    const cfg = await db.getGuildConfig(guild.id).catch(() => null);
+    const channel = cfg?.mod_log_channel ? guild.channels.cache.get(cfg.mod_log_channel) : null;
+    if (!channel?.isTextBased()) {
+      skipped++;
+      continue;
+    }
+    try {
+      await channel.send(payload);
+      sent++;
+    } catch {
+      skipped++;
+    }
+  }
+  res.json({ ok: true, sent, skipped });
+});
+
+router.post('/admin/redeploy-commands', (req, res) => {
+  execFile('node', [path.join(__dirname, '../../bot/deploy-commands.js')], { timeout: 60_000 }, (err, stdout, stderr) => {
+    if (err) return res.status(500).json({ error: stderr || err.message });
+    res.json({ ok: true, output: stdout });
+  });
+});
+
+router.post('/admin/restart', (req, res) => {
+  res.json({ ok: true });
+  setTimeout(() => {
+    // Exit non-zero so systemd's "Restart=on-failure" policy brings the
+    // process back up — a clean exit(0) would NOT trigger a restart.
+    process.exit(1);
+  }, 500);
 });
 
 module.exports = router;

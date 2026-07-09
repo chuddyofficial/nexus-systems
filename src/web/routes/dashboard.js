@@ -2,6 +2,7 @@ const express = require('express');
 const config = require('../../config');
 const { ensureAuth } = require('../middleware/ensureAuth');
 const { ensureGuildAccess } = require('../middleware/ensureGuildAccess');
+const { ensureOwner, isOwner } = require('../middleware/ensureOwner');
 
 const router = express.Router();
 
@@ -22,8 +23,17 @@ router.get('/login', (req, res) => {
 
 router.get('/servers', ensureAuth, (req, res) => {
   const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${config.clientId}&permissions=1099511627775&scope=bot%20applications.commands&guild_id=`;
-  res.render('servers', { user: req.user, inviteUrl });
+  res.render('servers', { user: req.user, inviteUrl, isOwner: isOwner(req.user.id) });
 });
+
+// ---- Website Admin (owner-only, site-wide bot control) ----
+const adminPages = ['overview', 'servers', 'broadcast', 'system'];
+for (const page of adminPages) {
+  const urlPath = page === 'overview' ? '/admin' : `/admin/${page}`;
+  router.get(urlPath, ensureAuth, ensureOwner, (req, res) => {
+    res.render(`admin/${page}`, { user: req.user, page });
+  });
+}
 
 // Simple guild pages: just render guild/<page> with the standard locals.
 // Pages not listed here (overview, analytics, modlog, auditlog, console) are

@@ -6,12 +6,24 @@
     <div class="brand"><span class="dot"></span> Nexus Systems</div>
     <nav>
       <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">🌙</button>
+      <% if (isOwner) { %><a class="btn" href="/admin">⚙️ Website Admin</a><% } %>
       <span class="muted" style="font-size:13px;">Logged in as <strong><%= user.username %></strong></span>
       <form action="/auth/logout" method="post" style="display:inline;"><button class="btn btn-sm" type="submit">Logout</button></form>
     </nav>
   </div>
 
   <div class="main" style="max-width:1100px;margin:0 auto;">
+    <% if (isOwner) { %>
+      <a href="/admin" class="card" style="display:block;margin-bottom:20px;border-color:var(--brand);text-decoration:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h2 style="margin:0 0 4px 0;">⚙️ Website Admin Panel</h2>
+            <p class="card-desc" style="margin:0;">Manage the bot and every server it's in, site-wide — visible only to your account.</p>
+          </div>
+          <span class="btn btn-primary">Open →</span>
+        </div>
+      </a>
+    <% } %>
     <div class="page-header">
       <h1>Your Servers</h1>
       <p>Pick a server to configure. Only servers where you have <strong>Manage Server</strong> permission are shown.</p>

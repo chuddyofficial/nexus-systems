@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: 'Website Admin — Broadcast' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/adminSidebar', { page: 'broadcast' }) %>
+    <main class="main" style="max-width:1100px;">
+      <div class="page-header">
+        <h1>Broadcast</h1>
+        <p>Send an announcement to a specific server's channel, or to every server's mod log channel at once.</p>
+      </div>
+
+      <div class="card">
+        <h2>Send to One Server</h2>
+        <div class="row">
+          <div class="field"><label>Server</label><select id="target-server"></select></div>
+          <div class="field"><label>Channel</label><select id="target-channel"></select></div>
+        </div>
+        <div class="field"><label>Plain Message (optional)</label><input type="text" id="single-content" placeholder="Plain text sent alongside the embed" /></div>
+        <div class="row">
+          <div class="field"><label>Embed Title (optional)</label><input type="text" id="single-embed-title" /></div>
+          <div class="field"><label>Embed Color</label><input type="color" id="single-embed-color" value="#5865f2" style="height:42px;" /></div>
+        </div>
+        <div class="field"><label>Embed Description</label><textarea id="single-embed-desc" rows="3"></textarea></div>
+        <button class="btn btn-primary" id="send-single">📢 Send to This Server</button>
+      </div>
+
+      <div class="card" style="border-color:var(--red);">
+        <h2>Broadcast to ALL Servers</h2>
+        <p class="card-desc">Sends to every server's configured <strong>Mod Log Channel</strong>. Servers without one set are skipped.</p>
+        <div class="field"><label>Plain Message (optional)</label><input type="text" id="all-content" /></div>
+        <div class="row">
+          <div class="field"><label>Embed Title (optional)</label><input type="text" id="all-embed-title" /></div>
+          <div class="field"><label>Embed Color</label><input type="color" id="all-embed-color" value="#5865f2" style="height:42px;" /></div>
+        </div>
+        <div class="field"><label>Embed Description</label><textarea id="all-embed-desc" rows="3"></textarea></div>
+        <button class="btn btn-danger" id="send-all">🚨 Broadcast to Every Server</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/admin-broadcast.js"></script>
+</body>
+</html>

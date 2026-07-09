@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: 'Website Admin — Overview' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/adminSidebar', { page: 'overview' }) %>
+    <main class="main" style="max-width:1100px;">
+      <div class="page-header">
+        <h1>⚙️ Website Admin</h1>
+        <p>Site-wide controls for the whole bot, across every server it's in. Visible only to the configured owner account.</p>
+      </div>
+
+      <div class="grid grid-3" id="stat-tiles">
+        <div class="stat-tile"><div class="stat-value" id="stat-guilds">—</div><div class="stat-label">Servers</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-members">—</div><div class="stat-label">Total Members</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-ping">—</div><div class="stat-label">Gateway Ping</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Largest Servers</h2>
+        <table>
+          <thead><tr><th>Server</th><th>Members</th><th></th></tr></thead>
+          <tbody id="top-servers-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Quick Links</h2>
+        <div class="cta" style="justify-content:flex-start;">
+          <a class="btn btn-primary" href="/admin/servers">🌐 Manage All Servers</a>
+          <a class="btn" href="/admin/broadcast">📢 Broadcast a Message</a>
+          <a class="btn" href="/admin/system">🖥️ Bot Control</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/admin-overview.js"></script>
+</body>
+</html>

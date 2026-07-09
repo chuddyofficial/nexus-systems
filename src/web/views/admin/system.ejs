@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: 'Website Admin — Bot Control' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/adminSidebar', { page: 'system' }) %>
+    <main class="main" style="max-width:1100px;">
+      <div class="page-header">
+        <h1>Bot Control</h1>
+        <p>Low-level process controls. Use carefully — these affect every server at once.</p>
+      </div>
+
+      <div class="grid grid-3" id="stat-tiles">
+        <div class="stat-tile"><div class="stat-value" id="stat-uptime">—</div><div class="stat-label">Bot Uptime</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-memory">—</div><div class="stat-label">Memory Used</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-node">—</div><div class="stat-label">Node Version</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Re-deploy Slash Commands</h2>
+        <p class="card-desc">Re-registers every slash command with Discord. Needed after a command's options change (like a recent update to <span class="mono">/ticket</span>).</p>
+        <button class="btn btn-primary" id="redeploy-btn">🔁 Re-deploy Commands</button>
+        <pre id="redeploy-output" class="mono" style="display:none;margin-top:12px;padding:12px;background:var(--bg-card);border-radius:var(--radius-sm);white-space:pre-wrap;font-size:12px;"></pre>
+      </div>
+
+      <div class="card" style="border-color:var(--red);">
+        <h2>Restart Bot Process</h2>
+        <p class="card-desc">Restarts the entire bot + dashboard process. It comes back up automatically within a few seconds — you'll be logged out briefly.</p>
+        <button class="btn btn-danger" id="restart-btn">♻️ Restart Now</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/admin-system.js"></script>
+</body>
+</html>

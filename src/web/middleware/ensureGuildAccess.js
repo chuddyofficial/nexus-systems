@@ -1,4 +1,5 @@
 const db = require('../../database/db');
+const { isOwner } = require('./ensureOwner');
 
 const MANAGE_GUILD = 0x20n;
 const ADMINISTRATOR = 0x8n;
@@ -34,7 +35,10 @@ async function ensureGuildAccess(req, res, next) {
     }
 
     const userGuild = (req.user?.guilds || []).find((g) => g.id === guildId);
-    const isServerManager = userManagesGuild(userGuild);
+    // Website admins (config.ownerIds) get full access to every server's
+    // dashboard for support/management purposes, regardless of whether they
+    // personally hold Manage Server or sit on a Team in that guild.
+    const isServerManager = isOwner(req.user?.id) || userManagesGuild(userGuild);
 
     let permissions = new Set();
     if (isServerManager) {

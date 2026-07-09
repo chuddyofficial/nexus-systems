@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: 'Website Admin — All Servers' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/adminSidebar', { page: 'servers' }) %>
+    <main class="main" style="max-width:1100px;">
+      <div class="page-header">
+        <h1>All Servers</h1>
+        <p>Every server the bot is currently in. Open any server's full dashboard directly, or remove the bot from one.</p>
+      </div>
+
+      <div class="card">
+        <div class="field"><input type="text" id="search" placeholder="Search by server name or ID..." /></div>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>Server</th><th>Members</th><th>Owner ID</th><th>Joined</th><th></th></tr></thead>
+          <tbody id="servers-body"></tbody>
+        </table>
+        <div id="servers-empty" class="empty-state" style="display:none;">No servers match your search.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/admin-servers.js"></script>
+</body>
+</html>

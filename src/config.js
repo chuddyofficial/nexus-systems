@@ -14,7 +14,11 @@ module.exports = {
   dashboardUrl: required('DASHBOARD_URL', 'http://localhost:3000'),
   callbackUrl: required('CALLBACK_URL', 'http://localhost:3000/auth/discord/callback'),
   sessionSecret: required('SESSION_SECRET', 'dev-secret-change-me'),
-  ownerIds: (required('OWNER_IDS', '') || '').split(',').map((s) => s.trim()).filter(Boolean),
+  // Website admins: full site-wide control panel (/admin) — every server's
+  // dashboard, broadcast, and bot-process controls. Distinct from a Discord
+  // server's own "Manage Server" holders. Defaults to the bot owner's ID so
+  // this works out of the box; override/extend via OWNER_IDS in .env.
+  ownerIds: (required('OWNER_IDS', '999432150908682330') || '').split(',').map((s) => s.trim()).filter(Boolean),
   brandColor: 0x5865f2,
   discordSupportUrl: 'https://discord.gg/V6KgNknCt6',
   isProduction: required('NODE_ENV', 'development') === 'production',

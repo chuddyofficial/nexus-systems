@@ -1,0 +1,21 @@
+<aside class="sidebar">
+  <a href="/servers" class="brand" style="padding:2px 10px 14px 10px;font-size:14px;">
+    <span class="dot"></span> Nexus Systems
+  </a>
+  <div class="guild-name">
+    <div class="icon-fallback" style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:15px;">⚙️</div>
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Website Admin</span>
+  </div>
+
+  <div class="sidebar-tools">
+    <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="nav-section">Owner Panel</div>
+  <a class="navlink <%= page === 'overview' ? 'active' : '' %>" href="/admin">📊 Overview</a>
+  <a class="navlink <%= page === 'servers' ? 'active' : '' %>" href="/admin/servers">🌐 All Servers</a>
+  <a class="navlink <%= page === 'broadcast' ? 'active' : '' %>" href="/admin/broadcast">📢 Broadcast</a>
+  <a class="navlink <%= page === 'system' ? 'active' : '' %>" href="/admin/system">🖥️ Bot Control</a>
+
+  <a class="back-link" href="/servers">← Exit Admin</a>
+</aside>
