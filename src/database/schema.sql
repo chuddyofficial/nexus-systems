@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS teams (
   guild_id VARCHAR(32) NOT NULL,
   name VARCHAR(100) NOT NULL,
   color VARCHAR(16) NOT NULL DEFAULT '#5865F2',
-  permissions TEXT NOT NULL DEFAULT '[]',
+  permissions VARCHAR(2000) NOT NULL DEFAULT '[]',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uniq_guild_team_name (guild_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
