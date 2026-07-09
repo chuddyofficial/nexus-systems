@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Nexus Systems installer — provisions a fresh Ubuntu 22.04 (Jammy) VPS to
-# run this bot + dashboard behind nginx with a free Let's Encrypt SSL
-# certificate, backed by a dedicated local MySQL database.
+# Nexus Systems installer — provisions a fresh Ubuntu LTS VPS (22.04, 24.04,
+# 26.04, ...) to run this bot + dashboard behind nginx with a free Let's
+# Encrypt SSL certificate, backed by a dedicated local MySQL database.
 #
 # Usage: run this from inside the cloned repo, as root (or via sudo):
 #   sudo ./install.sh
@@ -39,15 +39,36 @@ if [[ $EUID -ne 0 ]]; then
   fail "Please run this as root: sudo ./install.sh"
 fi
 
+# The app runs as an unprivileged "nexus" service user, which can never
+# traverse into /root (mode 700, root-only) no matter how the files inside
+# are chowned. Cloning into /root (the natural default when logged in as
+# root) silently breaks the systemd service and command registration deep
+# into the run — so catch it up front and relocate automatically instead.
+if [[ "$APP_DIR" == "/root" || "$APP_DIR" == /root/* ]]; then
+  NEW_DIR="/opt/$(basename "$APP_DIR")"
+  warn "This repo is under /root, which the '$SERVICE_USER' service user can never access."
+  if [[ -e "$NEW_DIR" ]]; then
+    fail "Move this repo out of /root yourself ($NEW_DIR already exists) — e.g. 'rm -rf $NEW_DIR && mv \"$APP_DIR\" \"$NEW_DIR\"' — then re-run ./install.sh from $NEW_DIR."
+  fi
+  info "Relocating to $NEW_DIR and continuing from there..."
+  mv "$APP_DIR" "$NEW_DIR"
+  cd "$NEW_DIR"
+  exec "$NEW_DIR/install.sh" "$@"
+fi
+
 if [[ -f /etc/os-release ]]; then
   . /etc/os-release
-  if [[ "${ID:-}" != "ubuntu" ]]; then
-    warn "This installer targets Ubuntu 22.04. Detected: ${PRETTY_NAME:-unknown}. Continuing anyway."
-  elif [[ "${VERSION_ID:-}" != "22.04" ]]; then
-    warn "This installer targets Ubuntu 22.04. Detected: ${PRETTY_NAME:-unknown}. Continuing anyway."
-  else
-    ok "Detected ${PRETTY_NAME}"
-  fi
+  case "${ID:-}:${VERSION_ID:-}" in
+    ubuntu:22.04|ubuntu:24.04|ubuntu:26.04)
+      ok "Detected ${PRETTY_NAME}"
+      ;;
+    ubuntu:*)
+      warn "Detected ${PRETTY_NAME} — not explicitly tested, but should work fine on any modern Ubuntu LTS. Continuing."
+      ;;
+    *)
+      warn "This installer targets Ubuntu. Detected: ${PRETTY_NAME:-unknown}. Continuing anyway."
+      ;;
+  esac
 fi
 
 ok "App directory: $APP_DIR"
