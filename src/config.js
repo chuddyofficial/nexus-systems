@@ -16,6 +16,7 @@ module.exports = {
   sessionSecret: required('SESSION_SECRET', 'dev-secret-change-me'),
   ownerIds: (required('OWNER_IDS', '') || '').split(',').map((s) => s.trim()).filter(Boolean),
   brandColor: 0x5865f2,
+  discordSupportUrl: 'https://discord.gg/V6KgNknCt6',
   isProduction: required('NODE_ENV', 'development') === 'production',
   db: {
     host: required('DB_HOST', '127.0.0.1'),
