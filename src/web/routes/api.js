@@ -59,7 +59,7 @@ router.get('/servers/:guildId/config', async (req, res) => {
 
 router.post(
   '/servers/:guildId/config',
-  requirePermission(['manage_config', 'manage_automod', 'manage_antiraid']),
+  requirePermission(['manage_config', 'manage_automod', 'manage_antiraid', 'manage_tickets']),
   async (req, res) => {
     const updated = await db.updateGuildConfig(req.params.guildId, req.body || {});
     res.json(updated);
@@ -284,28 +284,63 @@ router.get('/servers/:guildId/tickets', async (req, res) => {
   res.json(await db.getAllTickets(req.params.guildId));
 });
 
-router.post('/servers/:guildId/tickets/setup', async (req, res) => {
-  const { panelChannelId, categoryId, supportRoleId } = req.body;
-  const panelChannel = req.botGuild.channels.cache.get(panelChannelId);
-  if (!panelChannel?.isTextBased()) return res.status(400).json({ error: 'Invalid panel channel' });
+// ---- Ticket Panels — each is its own configurable "sector": embed, button,
+// category channel, support role, transcript channel, and optional dropdown
+// categories members pick from when opening a ticket.
+router.get('/servers/:guildId/tickets/panels', async (req, res) => {
+  res.json(await db.getTicketPanels(req.params.guildId));
+});
+
+router.post('/servers/:guildId/tickets/panels', async (req, res) => {
+  const { name } = req.body;
+  if (!name || typeof name !== 'string' || name.length > 100) return res.status(400).json({ error: 'A valid panel name is required' });
+  res.json(await db.createTicketPanel(req.params.guildId, name));
+});
+
+router.post('/servers/:guildId/tickets/panels/:id', async (req, res) => {
+  const panel = await db.updateTicketPanel(req.params.guildId, req.params.id, req.body || {});
+  if (!panel) return res.status(404).json({ error: 'Panel not found' });
+  res.json(panel);
+});
+
+router.delete('/servers/:guildId/tickets/panels/:id', async (req, res) => {
+  await db.deleteTicketPanel(req.params.guildId, req.params.id);
+  res.json({ ok: true });
+});
+
+router.post('/servers/:guildId/tickets/panels/:id/options', async (req, res) => {
+  const { label, emoji, description } = req.body;
+  if (!label || typeof label !== 'string' || label.length > 80) return res.status(400).json({ error: 'A valid option label is required' });
+  res.json(await db.addPanelOption(req.params.id, req.params.guildId, label, emoji || null, description || null));
+});
+
+router.delete('/servers/:guildId/tickets/panels/:panelId/options/:optionId', async (req, res) => {
+  await db.deletePanelOption(req.params.guildId, req.params.optionId);
+  res.json({ ok: true });
+});
+
+router.post('/servers/:guildId/tickets/panels/:id/post', async (req, res) => {
+  const { channelId } = req.body;
+  const panel = await db.getTicketPanel(req.params.guildId, req.params.id);
+  if (!panel) return res.status(404).json({ error: 'Panel not found' });
+  if (!panel.support_role_id) return res.status(400).json({ error: 'Set a support role for this panel before posting it.' });
+  const channel = req.botGuild.channels.cache.get(channelId);
+  if (!channel?.isTextBased()) return res.status(400).json({ error: 'Invalid channel' });
 
   try {
     const embed = new EmbedBuilder()
-      .setTitle('🎫 Support Tickets')
-      .setDescription('Click the button below to open a private ticket with our support team.')
-      .setColor(config.brandColor);
+      .setTitle(panel.embed_title)
+      .setDescription(panel.embed_description)
+      .setColor(panel.embed_color || config.brandColor);
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('ticket_open').setLabel('Open a Ticket').setEmoji('🎫').setStyle(ButtonStyle.Primary)
+      new ButtonBuilder()
+        .setCustomId(`ticket_open:${panel.id}`)
+        .setLabel(panel.button_label)
+        .setEmoji(panel.button_emoji || '🎫')
+        .setStyle(ButtonStyle.Primary)
     );
-    const panelMessage = await panelChannel.send({ embeds: [embed], components: [row] });
-
-    await db.updateGuildConfig(req.params.guildId, {
-      ticket_category_id: categoryId,
-      ticket_support_role_id: supportRoleId,
-      ticket_panel_channel: panelChannelId,
-      ticket_panel_message: panelMessage.id,
-    });
-    res.json({ ok: true });
+    const message = await channel.send({ embeds: [embed], components: [row] });
+    res.json(await db.setTicketPanelMessage(req.params.guildId, panel.id, channelId, message.id));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

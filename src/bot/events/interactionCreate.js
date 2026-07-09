@@ -10,16 +10,45 @@ const {
 } = require('discord.js');
 const db = require('../../database/db');
 const config = require('../../config');
-const { closeCurrentTicket, TICKET_CATEGORIES } = require('../utils/tickets');
+const { closeCurrentTicket } = require('../utils/tickets');
 
-async function handleTicketOpenClick(interaction) {
-  const cfg = await db.getGuildConfig(interaction.guild.id);
-  if (!cfg.ticket_category_id || !cfg.ticket_support_role_id) {
-    return interaction.reply({ content: 'The ticket system is not configured yet.', flags: MessageFlags.Ephemeral });
+async function openTicketChannel(interaction, panel, categoryLabel) {
+  const channel = await interaction.guild.channels.create({
+    name: `ticket-${interaction.user.username}`.slice(0, 90),
+    type: ChannelType.GuildText,
+    parent: panel.category_channel_id || undefined,
+    permissionOverwrites: [
+      { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+      { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+      { id: panel.support_role_id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+    ],
+  });
+
+  await db.createTicket(interaction.guild.id, channel.id, interaction.user.id, categoryLabel, panel.id);
+
+  const embed = new EmbedBuilder()
+    .setTitle(panel.embed_title || '🎫 Ticket Opened')
+    .setDescription(
+      `Hi ${interaction.user}, support will be with you shortly.${categoryLabel ? `\n**Category:** ${categoryLabel}` : ''}\nUse the button below when this is resolved.`
+    )
+    .setColor(panel.embed_color || config.brandColor);
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('ticket_claim').setLabel('Claim').setEmoji('🙋').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('ticket_close').setLabel('Close Ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger)
+  );
+
+  await channel.send({ content: `${interaction.user} <@&${panel.support_role_id}>`, embeds: [embed], components: [row] });
+  return channel;
+}
+
+async function handleTicketOpenClick(interaction, panelId) {
+  const panel = await db.getTicketPanel(interaction.guild.id, panelId);
+  if (!panel || !panel.support_role_id) {
+    return interaction.reply({ content: 'This ticket panel is no longer configured — contact a staff member.', flags: MessageFlags.Ephemeral });
   }
 
   const openTickets = await db.getOpenTickets(interaction.guild.id);
-  const existing = openTickets.find((t) => t.user_id === interaction.user.id);
+  const existing = openTickets.find((t) => t.user_id === interaction.user.id && t.panel_id === panel.id);
   if (existing) {
     const stillExists = interaction.guild.channels.cache.has(existing.channel_id);
     if (stillExists) {
@@ -31,10 +60,24 @@ async function handleTicketOpenClick(interaction) {
     await db.closeTicket(interaction.guild.id, existing.channel_id);
   }
 
+  if (!panel.options.length) {
+    await interaction.reply({ content: 'Opening your ticket...', flags: MessageFlags.Ephemeral });
+    const channel = await openTicketChannel(interaction, panel, null);
+    await interaction.editReply({ content: `Ticket created: ${channel}` });
+    return;
+  }
+
   const menu = new StringSelectMenuBuilder()
-    .setCustomId('ticket_category_select')
+    .setCustomId(`ticket_category_select:${panel.id}`)
     .setPlaceholder('What do you need help with?')
-    .addOptions(TICKET_CATEGORIES.map((c) => ({ label: c, value: c })));
+    .addOptions(
+      panel.options.map((o) => ({
+        label: o.label,
+        value: String(o.id),
+        description: o.description || undefined,
+        emoji: o.emoji || undefined,
+      }))
+    );
 
   await interaction.reply({
     content: 'Pick a category to open your ticket:',
@@ -43,35 +86,15 @@ async function handleTicketOpenClick(interaction) {
   });
 }
 
-async function handleTicketCategorySelect(interaction) {
-  const category = interaction.values[0];
-  const cfg = await db.getGuildConfig(interaction.guild.id);
+async function handleTicketCategorySelect(interaction, panelId) {
+  const panel = await db.getTicketPanel(interaction.guild.id, panelId);
+  if (!panel || !panel.support_role_id) {
+    return interaction.update({ content: 'This ticket panel is no longer configured — contact a staff member.', components: [] });
+  }
+  const chosen = panel.options.find((o) => o.id === Number(interaction.values[0]));
 
-  await interaction.update({ content: `Opening your ticket (${category})...`, components: [] });
-
-  const channel = await interaction.guild.channels.create({
-    name: `ticket-${interaction.user.username}`.slice(0, 90),
-    type: ChannelType.GuildText,
-    parent: cfg.ticket_category_id,
-    permissionOverwrites: [
-      { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-      { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
-      { id: cfg.ticket_support_role_id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
-    ],
-  });
-
-  await db.createTicket(interaction.guild.id, channel.id, interaction.user.id, category);
-
-  const embed = new EmbedBuilder()
-    .setTitle('🎫 Ticket Opened')
-    .setDescription(`Hi ${interaction.user}, support will be with you shortly.\n**Category:** ${category}\nUse \`/ticket close\` or the button below when this is resolved.`)
-    .setColor(config.brandColor);
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('ticket_claim').setLabel('Claim').setEmoji('🙋').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('ticket_close').setLabel('Close Ticket').setEmoji('🔒').setStyle(ButtonStyle.Danger)
-  );
-
-  await channel.send({ content: `${interaction.user} <@&${cfg.ticket_support_role_id}>`, embeds: [embed], components: [row] });
+  await interaction.update({ content: `Opening your ticket${chosen ? ` (${chosen.label})` : ''}...`, components: [] });
+  const channel = await openTicketChannel(interaction, panel, chosen?.label || null);
   await interaction.editReply({ content: `Ticket created: ${channel}`, components: [] });
 }
 
@@ -141,7 +164,10 @@ module.exports = {
 
     if (interaction.isStringSelectMenu()) {
       try {
-        if (interaction.customId === 'ticket_category_select') return await handleTicketCategorySelect(interaction);
+        if (interaction.customId.startsWith('ticket_category_select:')) {
+          const panelId = Number(interaction.customId.split(':')[1]);
+          return await handleTicketCategorySelect(interaction, panelId);
+        }
       } catch (err) {
         console.error('[select]', err);
       }
@@ -150,7 +176,10 @@ module.exports = {
 
     if (interaction.isButton()) {
       try {
-        if (interaction.customId === 'ticket_open') return await handleTicketOpenClick(interaction);
+        if (interaction.customId.startsWith('ticket_open:')) {
+          const panelId = Number(interaction.customId.split(':')[1]);
+          return await handleTicketOpenClick(interaction, panelId);
+        }
         if (interaction.customId === 'ticket_close') return await closeCurrentTicket(interaction);
         if (interaction.customId === 'ticket_claim') return await handleTicketClaim(interaction);
         if (interaction.customId === 'verify_click') return await handleVerifyClick(interaction);

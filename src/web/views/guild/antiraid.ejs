@@ -17,6 +17,13 @@
         <button class="btn btn-primary" id="save-autorole">Save Auto-Role</button>
       </div>
 
+      <div class="card" style="border-color:var(--red);">
+        <div class="toggle-row">
+          <div><div class="toggle-label">🔒 Emergency Lockdown</div><div class="toggle-desc">Instantly removes every new member who joins while this is on. Use during an active raid, then turn it off once it's over.</div></div>
+          <label class="switch"><input type="checkbox" id="antiraid_lockdown_active" /><span class="slider"></span></label>
+        </div>
+      </div>
+
       <div class="card">
         <div class="toggle-row">
           <div><div class="toggle-label">Enable Anti-Raid</div><div class="toggle-desc">Detect and act on suspicious rapid-join bursts and very new accounts.</div></div>
@@ -36,7 +43,31 @@
           </div>
           <div class="field"><label>Minimum account age (days, 0 = off)</label><input type="number" id="antiraid_min_account_age_days" min="0" max="60" /></div>
         </div>
+        <div class="row">
+          <div class="field"><label>Raid Alert Channel</label><select id="antiraid_alert_channel"></select></div>
+        </div>
         <button class="btn btn-primary" id="save-antiraid">Save Anti-Raid Settings</button>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div><div class="toggle-label">🛡️ Anti-Nuke</div><div class="toggle-desc">Detects a moderator/staff account rapidly deleting channels, deleting roles, or mass-banning members, then automatically strips their roles or bans them before more damage is done.</div></div>
+          <label class="switch"><input type="checkbox" id="antinuke_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="row" style="margin-top:14px;">
+          <div class="field"><label>Action threshold (destructive actions)</label><input type="number" id="antinuke_threshold" min="2" max="20" /></div>
+          <div class="field"><label>Time window (ms)</label><input type="number" id="antinuke_window" min="1000" max="120000" step="1000" /></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Punishment</label>
+            <select id="antinuke_punishment">
+              <option value="strip_roles">Strip All Roles</option>
+              <option value="ban">Ban</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="save-antinuke">Save Anti-Nuke Settings</button>
       </div>
     </main>
   </div>

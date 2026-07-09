@@ -4,28 +4,28 @@
 <body>
   <div class="app-shell">
     <%- include('../partials/sidebar') %>
-    <main class="main">
+    <main class="main" style="max-width:1100px;">
       <div class="page-header">
         <h1>Support Tickets</h1>
-        <p>Members pick a category and get a private support channel, staff can claim tickets, and closed tickets can log a full transcript.</p>
+        <p>Create as many ticket panels ("sectors") as you need — each with its own embed, button, support role, ticket category, transcript log, and dropdown categories. Fully editable here, no code required.</p>
       </div>
 
       <div class="card">
-        <h2>Panel Setup</h2>
-        <p class="card-desc">Members click "Open a Ticket" and choose a category (General Support / Report a User / Billing / Other).</p>
+        <h2>Create a Ticket Panel</h2>
         <div class="row">
-          <div class="field"><label>Panel Channel</label><select id="panel_channel"></select></div>
-          <div class="field"><label>Ticket Category</label><select id="category"></select></div>
-          <div class="field"><label>Support Role</label><select id="support_role"></select></div>
+          <div class="field"><label>Panel Name</label><input type="text" id="panel-name" placeholder="e.g. General Support" /></div>
         </div>
-        <button class="btn btn-primary" id="post-panel-btn">🎫 Post Ticket Panel</button>
+        <button class="btn btn-primary" id="panel-create">+ Create Panel</button>
       </div>
 
+      <div id="panels-list"></div>
+
       <div class="card">
-        <h2>Transcripts &amp; Auto-Close</h2>
+        <h2>Auto-Close</h2>
+        <p class="card-desc">Applies to every panel. A ticket with no activity for this long will be closed automatically.</p>
         <div class="row">
-          <div class="field"><label>Transcript Log Channel</label><select id="transcript_channel"></select></div>
           <div class="field"><label>Auto-close after inactivity (hours, 0 = off)</label><input type="number" id="auto_close_hours" min="0" max="720" /></div>
+          <div class="field"><label>Default Transcript Channel (fallback if a panel has none set)</label><select id="default_transcript_channel"></select></div>
         </div>
         <button class="btn" id="save-ticket-settings">Save</button>
       </div>

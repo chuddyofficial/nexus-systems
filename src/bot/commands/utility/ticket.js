@@ -19,7 +19,8 @@ module.exports = {
     .addSubcommand((sc) =>
       sc
         .setName('setup')
-        .setDescription('Post the ticket panel in a channel')
+        .setDescription('Create and post a new ticket panel')
+        .addStringOption((o) => o.setName('name').setDescription('Internal name for this panel (e.g. "General Support")').setRequired(true))
         .addChannelOption((o) => o.setName('panel_channel').setDescription('Where to post the "Open a Ticket" button').addChannelTypes(ChannelType.GuildText).setRequired(true))
         .addChannelOption((o) => o.setName('category').setDescription('Category new ticket channels are created under').addChannelTypes(ChannelType.GuildCategory).setRequired(true))
         .addRoleOption((o) => o.setName('support_role').setDescription('Role that can see and manage tickets').setRequired(true))
@@ -32,28 +33,36 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'setup') {
+      const name = interaction.options.getString('name', true);
       const panelChannel = interaction.options.getChannel('panel_channel', true);
       const category = interaction.options.getChannel('category', true);
       const supportRole = interaction.options.getRole('support_role', true);
 
+      const panel = await db.createTicketPanel(interaction.guild.id, name);
+      await db.updateTicketPanel(interaction.guild.id, panel.id, {
+        category_channel_id: category.id,
+        support_role_id: supportRole.id,
+      });
+
       const embed = new EmbedBuilder()
-        .setTitle('🎫 Support Tickets')
-        .setDescription('Click the button below to open a private ticket with our support team.')
-        .setColor(config.brandColor);
+        .setTitle(panel.embed_title)
+        .setDescription(panel.embed_description)
+        .setColor(panel.embed_color || config.brandColor);
       const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_open').setLabel('Open a Ticket').setEmoji('🎫').setStyle(ButtonStyle.Primary)
+        new ButtonBuilder()
+          .setCustomId(`ticket_open:${panel.id}`)
+          .setLabel(panel.button_label)
+          .setEmoji(panel.button_emoji || '🎫')
+          .setStyle(ButtonStyle.Primary)
       );
 
       const panelMessage = await panelChannel.send({ embeds: [embed], components: [row] });
+      await db.setTicketPanelMessage(interaction.guild.id, panel.id, panelChannel.id, panelMessage.id);
 
-      await db.updateGuildConfig(interaction.guild.id, {
-        ticket_category_id: category.id,
-        ticket_support_role_id: supportRole.id,
-        ticket_panel_channel: panelChannel.id,
-        ticket_panel_message: panelMessage.id,
+      return interaction.reply({
+        content: `Ticket panel "${name}" created and posted in ${panelChannel}. Add categories or restyle it from the web dashboard's Tickets page.`,
+        flags: MessageFlags.Ephemeral,
       });
-
-      return interaction.reply({ content: `Ticket panel posted in ${panelChannel}.`, flags: MessageFlags.Ephemeral });
     }
 
     if (sub === 'close') {

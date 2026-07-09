@@ -1,5 +1,4 @@
 const { ActivityType } = require('discord.js');
-const config = require('../../config');
 const bus = require('../utils/eventBus');
 const { startScheduler } = require('../utils/scheduler');
 
@@ -13,7 +12,7 @@ module.exports = {
       client.user.setPresence({
         activities: [
           {
-            name: `Dashboard: ${config.dashboardUrl.replace(/^https?:\/\//, '')}`,
+            name: `Serving and Protecting ${client.guilds.cache.size} server${client.guilds.cache.size === 1 ? '' : 's'}`,
             type: ActivityType.Watching,
           },
         ],

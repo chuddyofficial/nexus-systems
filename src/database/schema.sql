@@ -213,6 +213,32 @@ CREATE TABLE IF NOT EXISTS level_roles (
   UNIQUE KEY uniq_guild_level (guild_id, level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS ticket_panels (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  embed_title VARCHAR(256) NOT NULL DEFAULT '🎫 Support Tickets',
+  embed_description VARCHAR(1000) NOT NULL DEFAULT 'Click the button below to open a private ticket with our support team.',
+  embed_color VARCHAR(16) NOT NULL DEFAULT '#5865F2',
+  button_label VARCHAR(80) NOT NULL DEFAULT 'Open a Ticket',
+  button_emoji VARCHAR(32) NOT NULL DEFAULT '🎫',
+  category_channel_id VARCHAR(32),
+  support_role_id VARCHAR(32),
+  transcript_channel_id VARCHAR(32),
+  panel_channel_id VARCHAR(32),
+  panel_message_id VARCHAR(32),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS ticket_panel_options (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  panel_id INT NOT NULL,
+  guild_id VARCHAR(32) NOT NULL,
+  label VARCHAR(80) NOT NULL,
+  emoji VARCHAR(32),
+  description VARCHAR(200)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Columns added after the initial release, applied via plain ALTER TABLE
 -- (MySQL, unlike MariaDB, has no "ADD COLUMN IF NOT EXISTS" — idempotency
 -- on re-run is instead handled in db.js's initDb() by tolerating the
@@ -230,6 +256,14 @@ ALTER TABLE guild_config ADD COLUMN ticket_auto_close_hours INT NOT NULL DEFAULT
 ALTER TABLE tickets ADD COLUMN claimed_by VARCHAR(32);
 ALTER TABLE tickets ADD COLUMN category VARCHAR(64);
 ALTER TABLE tickets ADD COLUMN last_activity_at DATETIME NULL;
+ALTER TABLE tickets ADD COLUMN panel_id INT NULL;
+
+ALTER TABLE guild_config ADD COLUMN antiraid_alert_channel VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN antiraid_lockdown_active TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN antinuke_enabled TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN antinuke_threshold INT NOT NULL DEFAULT 5;
+ALTER TABLE guild_config ADD COLUMN antinuke_window INT NOT NULL DEFAULT 10000;
+ALTER TABLE guild_config ADD COLUMN antinuke_punishment VARCHAR(16) NOT NULL DEFAULT 'strip_roles';
 
 CREATE INDEX idx_warnings_guild_user ON warnings(guild_id, user_id);
 CREATE INDEX idx_modactions_guild ON mod_actions(guild_id);
@@ -243,3 +277,5 @@ CREATE INDEX idx_suggestions_guild ON suggestions(guild_id, status);
 CREATE INDEX idx_teams_guild ON teams(guild_id);
 CREATE INDEX idx_teammembers_guild_discord ON team_members(guild_id, discord_id);
 CREATE INDEX idx_levelroles_guild ON level_roles(guild_id);
+CREATE INDEX idx_ticketpanels_guild ON ticket_panels(guild_id);
+CREATE INDEX idx_ticketpaneloptions_panel ON ticket_panel_options(panel_id);

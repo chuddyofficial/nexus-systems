@@ -6,6 +6,12 @@ const recentJoins = new Map();
 
 async function checkAntiRaid(member) {
   const cfg = await db.getGuildConfig(member.guild.id);
+
+  if (cfg.antiraid_lockdown_active) {
+    await actOn(member, cfg.antiraid_action, 'Server is in emergency lockdown mode — all new joins are being removed');
+    return true;
+  }
+
   if (!cfg.antiraid_enabled) return false;
 
   const accountAgeDays = (Date.now() - member.user.createdTimestamp) / 86_400_000;
@@ -20,12 +26,21 @@ async function checkAntiRaid(member) {
   recentJoins.set(member.guild.id, arr);
 
   if (arr.length >= cfg.antiraid_join_threshold) {
+    const reason = `Rapid join burst detected (${arr.length} joins in ${Math.round(cfg.antiraid_join_window / 1000)}s) — possible raid`;
     pushConsole(member.guild.id, 'system', `⚠️ Possible raid detected: ${arr.length} joins in ${cfg.antiraid_join_window}ms`);
-    await actOn(member, cfg.antiraid_action, `Rapid join burst detected (${arr.length} joins in ${Math.round(cfg.antiraid_join_window / 1000)}s) — possible raid`);
+    await sendRaidAlert(member.guild, cfg, reason);
+    await actOn(member, cfg.antiraid_action, reason);
     return true;
   }
 
   return false;
+}
+
+async function sendRaidAlert(guild, cfg, reason) {
+  if (!cfg.antiraid_alert_channel) return;
+  const channel = guild.channels.cache.get(cfg.antiraid_alert_channel);
+  if (!channel?.isTextBased()) return;
+  await channel.send(`🚨 **Anti-Raid Alert** — ${reason}`).catch(() => {});
 }
 
 async function actOn(member, action, reason) {

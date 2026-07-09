@@ -490,6 +490,16 @@ tbody tr:hover { background: var(--bg-elevated); }
   cursor: pointer; font-size: 15px; transition: 0.15s;
 }
 .icon-btn:hover { background: var(--bg-card-hover); color: var(--text); border-color: rgba(88, 101, 242, 0.4); }
+.icon-btn.lockdown-active {
+  background: rgba(237, 66, 69, 0.15);
+  border-color: rgba(237, 66, 69, 0.5);
+  color: var(--red);
+  animation: lockdown-pulse 1.6s ease-in-out infinite;
+}
+@keyframes lockdown-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(237, 66, 69, 0.4); }
+  50% { box-shadow: 0 0 0 5px rgba(237, 66, 69, 0); }
+}
 
 /* ---------- Command palette ---------- */
 .palette-overlay {

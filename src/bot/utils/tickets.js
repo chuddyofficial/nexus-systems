@@ -2,12 +2,11 @@ const { MessageFlags, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const db = require('../../database/db');
 const config = require('../../config');
 
-const TICKET_CATEGORIES = ['General Support', 'Report a User', 'Billing / Other'];
-
-async function postTranscript(guild, channel, ticket) {
+async function postTranscript(guild, channel, ticket, panel) {
   const cfg = await db.getGuildConfig(guild.id);
-  if (!cfg.ticket_transcript_channel) return;
-  const logChannel = guild.channels.cache.get(cfg.ticket_transcript_channel);
+  const transcriptChannelId = panel?.transcript_channel_id || cfg.ticket_transcript_channel;
+  if (!transcriptChannelId) return;
+  const logChannel = guild.channels.cache.get(transcriptChannelId);
   if (!logChannel?.isTextBased()) return;
 
   const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
@@ -27,6 +26,7 @@ async function postTranscript(guild, channel, ticket) {
     .setColor(config.brandColor)
     .addFields(
       { name: 'Opened by', value: `<@${ticket.user_id}>`, inline: true },
+      { name: 'Panel', value: panel?.name || 'Legacy', inline: true },
       { name: 'Category', value: ticket.category || 'General', inline: true },
       { name: 'Claimed by', value: ticket.claimed_by ? `<@${ticket.claimed_by}>` : 'Unclaimed', inline: true }
     )
@@ -41,10 +41,11 @@ async function closeCurrentTicket(interaction) {
     await interaction.reply({ content: 'This is not an open ticket channel.', flags: MessageFlags.Ephemeral });
     return;
   }
+  const panel = ticket.panel_id ? await db.getTicketPanel(interaction.guild.id, ticket.panel_id) : null;
   await db.closeTicket(interaction.guild.id, interaction.channel.id);
   await interaction.reply('🔒 Closing this ticket in 5 seconds...');
-  await postTranscript(interaction.guild, interaction.channel, ticket);
+  await postTranscript(interaction.guild, interaction.channel, ticket, panel);
   setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
 }
 
-module.exports = { closeCurrentTicket, postTranscript, TICKET_CATEGORIES };
+module.exports = { closeCurrentTicket, postTranscript };

@@ -2,6 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const db = require('../../database/db');
 const { sendModLog, pushConsole } = require('./logger');
 const { processDueGiveaways } = require('./giveaways');
+const { postTranscript } = require('./tickets');
 
 const CHECK_INTERVAL_MS = 20_000;
 
@@ -52,9 +53,11 @@ async function processStaleTickets(client) {
     const guild = client.guilds.cache.get(ticket.guild_id);
     if (!guild) continue;
     try {
+      const panel = ticket.panel_id ? await db.getTicketPanel(ticket.guild_id, ticket.panel_id) : null;
       await db.closeTicket(ticket.guild_id, ticket.channel_id);
       const channel = guild.channels.cache.get(ticket.channel_id);
       if (channel) {
+        await postTranscript(guild, channel, ticket, panel).catch(() => {});
         await channel.send('🔒 This ticket was automatically closed due to inactivity.').catch(() => {});
         setTimeout(() => channel.delete().catch(() => {}), 10_000);
       }

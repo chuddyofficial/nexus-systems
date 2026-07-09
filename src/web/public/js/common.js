@@ -241,6 +241,38 @@ function initCommandPalette(guildId) {
   return { open, close };
 }
 
+// ---------- Emergency lockdown quick toggle (sidebar) ----------
+async function initLockdownToggle(buttonEl, guildId) {
+  const applyState = (active) => {
+    buttonEl.textContent = active ? '🔒' : '🔓';
+    buttonEl.classList.toggle('lockdown-active', active);
+    buttonEl.title = active ? 'Lockdown is ON — click to lift it' : 'Toggle emergency lockdown';
+  };
+
+  try {
+    const config = await api(`/api/servers/${guildId}/config`);
+    applyState(!!config.antiraid_lockdown_active);
+  } catch {
+    /* ignore — button just won't reflect live state until clicked */
+  }
+
+  buttonEl.addEventListener('click', async () => {
+    try {
+      const config = await api(`/api/servers/${guildId}/config`);
+      const next = !config.antiraid_lockdown_active;
+      if (next && !(await confirmDialog(
+        'Every new member who joins will be immediately removed until you turn this off. Use this during an active raid.',
+        { title: 'Enable emergency lockdown?', confirmText: 'Enable Lockdown' }
+      ))) return;
+      await api(`/api/servers/${guildId}/config`, { method: 'POST', body: { antiraid_lockdown_active: next } });
+      applyState(next);
+      toast(next ? '🔒 Emergency lockdown enabled.' : 'Lockdown lifted.');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const themeBtn = document.getElementById('theme-toggle-btn');
   if (themeBtn) initThemeToggle(themeBtn);
@@ -249,5 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const palette = initCommandPalette(window.GUILD_ID);
     const paletteBtn = document.getElementById('palette-trigger-btn');
     if (paletteBtn) paletteBtn.addEventListener('click', palette.open);
+
+    const lockdownBtn = document.getElementById('lockdown-toggle-btn');
+    if (lockdownBtn) initLockdownToggle(lockdownBtn, window.GUILD_ID);
   }
 });

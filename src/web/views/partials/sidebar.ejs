@@ -15,6 +15,9 @@
   <div class="sidebar-tools">
     <button class="icon-btn" id="palette-trigger-btn" title="Quick jump (Ctrl+K)">⌘K</button>
     <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">🌙</button>
+    <% if (isServerManager || canSee('manage_antiraid') || canSee('manage_config')) { %>
+      <button class="icon-btn" id="lockdown-toggle-btn" title="Toggle emergency lockdown">🔓</button>
+    <% } %>
   </div>
 
   <div class="nav-section">General</div>

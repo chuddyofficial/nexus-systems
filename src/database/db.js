@@ -32,7 +32,8 @@ const CONFIG_COLUMNS = [
   'automod_banned_words', 'automod_ignored_channels', 'automod_action',
   'prefix', 'autorole_id',
   'antiraid_enabled', 'antiraid_join_threshold', 'antiraid_join_window', 'antiraid_action',
-  'antiraid_min_account_age_days',
+  'antiraid_min_account_age_days', 'antiraid_alert_channel', 'antiraid_lockdown_active',
+  'antinuke_enabled', 'antinuke_threshold', 'antinuke_window', 'antinuke_punishment',
   'leveling_enabled', 'leveling_announce_channel', 'leveling_announce_message',
   'starboard_enabled', 'starboard_channel', 'starboard_emoji', 'starboard_threshold',
   'ticket_category_id', 'ticket_support_role_id', 'ticket_panel_channel', 'ticket_panel_message',
@@ -45,7 +46,16 @@ const BOOLEAN_COLUMNS = new Set([
   'welcome_enabled', 'leave_enabled', 'automod_enabled', 'automod_anti_invite',
   'automod_anti_spam', 'automod_anti_mass_mention', 'automod_caps_filter',
   'antiraid_enabled', 'leveling_enabled', 'starboard_enabled', 'verify_enabled',
+  'antiraid_lockdown_active', 'antinuke_enabled',
 ]);
+
+// Ticket panels: patchable columns for updateTicketPanel (mirrors ticket_panels
+// schema, minus panel_channel_id/panel_message_id which are only ever set via
+// setTicketPanelMessage after actually posting the panel to Discord).
+const TICKET_PANEL_COLUMNS = [
+  'name', 'embed_title', 'embed_description', 'embed_color', 'button_label', 'button_emoji',
+  'category_channel_id', 'support_role_id', 'transcript_channel_id',
+];
 
 const JSON_COLUMNS = new Set(['automod_banned_words', 'automod_ignored_channels']);
 
@@ -308,10 +318,10 @@ async function upsertStarboardPost(guildId, originalMessageId, starboardMessageI
 }
 
 // Tickets
-async function createTicket(guildId, channelId, userId, category) {
+async function createTicket(guildId, channelId, userId, category, panelId) {
   const [result] = await pool.execute(
-    'INSERT INTO tickets (guild_id, channel_id, user_id, category, last_activity_at) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
-    [guildId, channelId, userId, category || null]
+    'INSERT INTO tickets (guild_id, channel_id, user_id, category, panel_id, last_activity_at) VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())',
+    [guildId, channelId, userId, category || null, panelId || null]
   );
   const [rows] = await pool.execute('SELECT * FROM tickets WHERE id = ?', [result.insertId]);
   return rows[0];
@@ -369,6 +379,73 @@ async function getAllTickets(guildId, limit = 100) {
     guildId,
     limit,
   ]);
+  return rows;
+}
+
+// Ticket panels — each panel is its own configurable "sector": custom embed,
+// button, discord category to file tickets under, support role, transcript
+// channel, and an optional set of categories members pick from when opening.
+async function createTicketPanel(guildId, name) {
+  const [result] = await pool.execute('INSERT INTO ticket_panels (guild_id, name) VALUES (?, ?)', [guildId, name]);
+  return getTicketPanel(guildId, result.insertId);
+}
+
+async function updateTicketPanel(guildId, id, patch) {
+  const cols = [];
+  const values = [];
+  for (const [key, value] of Object.entries(patch)) {
+    if (!TICKET_PANEL_COLUMNS.includes(key)) continue;
+    cols.push(`${key} = ?`);
+    values.push(value === '' ? null : value);
+  }
+  if (cols.length) {
+    values.push(guildId, id);
+    await pool.execute(`UPDATE ticket_panels SET ${cols.join(', ')} WHERE guild_id = ? AND id = ?`, values);
+  }
+  return getTicketPanel(guildId, id);
+}
+
+async function setTicketPanelMessage(guildId, id, channelId, messageId) {
+  await pool.execute(
+    'UPDATE ticket_panels SET panel_channel_id = ?, panel_message_id = ? WHERE guild_id = ? AND id = ?',
+    [channelId, messageId, guildId, id]
+  );
+  return getTicketPanel(guildId, id);
+}
+
+async function getTicketPanels(guildId) {
+  const [rows] = await pool.execute('SELECT * FROM ticket_panels WHERE guild_id = ? ORDER BY created_at ASC', [guildId]);
+  return Promise.all(rows.map(async (p) => ({ ...p, options: await getPanelOptions(p.id) })));
+}
+
+async function getTicketPanel(guildId, id) {
+  const [rows] = await pool.execute('SELECT * FROM ticket_panels WHERE guild_id = ? AND id = ?', [guildId, id]);
+  if (!rows[0]) return undefined;
+  return { ...rows[0], options: await getPanelOptions(id) };
+}
+
+async function deleteTicketPanel(guildId, id) {
+  await pool.execute('DELETE FROM ticket_panel_options WHERE guild_id = ? AND panel_id = ?', [guildId, id]);
+  const [result] = await pool.execute('DELETE FROM ticket_panels WHERE guild_id = ? AND id = ?', [guildId, id]);
+  return { changes: result.affectedRows };
+}
+
+async function addPanelOption(panelId, guildId, label, emoji, description) {
+  const [result] = await pool.execute(
+    'INSERT INTO ticket_panel_options (panel_id, guild_id, label, emoji, description) VALUES (?, ?, ?, ?, ?)',
+    [panelId, guildId, label, emoji || null, description || null]
+  );
+  const [rows] = await pool.execute('SELECT * FROM ticket_panel_options WHERE id = ?', [result.insertId]);
+  return rows[0];
+}
+
+async function deletePanelOption(guildId, id) {
+  const [result] = await pool.execute('DELETE FROM ticket_panel_options WHERE guild_id = ? AND id = ?', [guildId, id]);
+  return { changes: result.affectedRows };
+}
+
+async function getPanelOptions(panelId) {
+  const [rows] = await pool.execute('SELECT * FROM ticket_panel_options WHERE panel_id = ? ORDER BY id ASC', [panelId]);
   return rows;
 }
 
@@ -660,6 +737,15 @@ module.exports = {
   getAllStaleTickets,
   getOpenTickets,
   getAllTickets,
+  createTicketPanel,
+  updateTicketPanel,
+  setTicketPanelMessage,
+  getTicketPanels,
+  getTicketPanel,
+  deleteTicketPanel,
+  addPanelOption,
+  deletePanelOption,
+  getPanelOptions,
   createGiveaway,
   getActiveGiveaways,
   getAllGiveaways,
