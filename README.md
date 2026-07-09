@@ -8,15 +8,18 @@ handles Node.js, nginx, HTTPS (Let's Encrypt), and a systemd service for you.
 
 ## What's included
 
-- **Bot** (discord.js v14, 30 slash commands): moderation, AutoMod, anti-raid, temp-bans, leveling/XP, starboard, tickets, giveaways, polls, suggestions, moderator notes, reaction roles, custom text commands, custom embeds, and more (full list below).
+- **Bot** (discord.js v14, 31 slash commands): moderation, AutoMod, anti-raid, temp-bans, leveling/XP with role rewards, starboard, a full ticket system, giveaways, polls, suggestions, moderator notes, reaction roles, member verification, custom text commands, custom embeds, and more (full list below).
 - **Dashboard** (Express + EJS): Discord OAuth2 login, light/dark theme, a command palette (Ctrl/Cmd+K), a visual embed builder with a live Discord-style preview, analytics charts, a member browser, an audit log viewer, config backup/restore, and a live console (Socket.IO) streaming bot events in real time.
+- **Access control**: a Teams/RBAC permission system — create Teams (Admin/Mod/Support-style groups), grant each one specific dashboard permissions, and add members by Discord user ID or role, without handing out full "Manage Server" access. Plus per-server slash command enable/disable toggles.
 - **Storage**: MySQL, via a connection pool (`mysql2`) — built for multi-tenant scale, with every Discord server's config, warnings, tickets, etc. isolated by `guild_id`. `install.sh` provisions MySQL automatically on the VPS.
 
 ## Feature list
 
-**Moderation & safety**: ban / unban / kick / timeout / temp-ban (auto-unban) / warn / clear-warnings / purge / lock / unlock / lockdown-all / slowmode, moderator notes, AutoMod (anti-invite, anti-spam, banned words, caps filter, mass-mention), anti-raid (join-burst detection + minimum account age gate), auto-role on join, full mod/message/join logging, and a real Discord audit-log viewer.
+**Moderation & safety**: ban / unban / kick / timeout / temp-ban (auto-unban) / warn / clear-warnings / purge / lock / unlock / lockdown-all / slowmode, moderator notes, AutoMod (anti-invite, anti-spam, banned words, caps filter, mass-mention), anti-raid (join-burst detection + minimum account age gate), auto-role on join, member verification (button-gated access), full mod/message/join logging, and a real Discord audit-log viewer.
 
-**Engagement**: leveling/XP with `/rank` and a leaderboard, starboard, a button-driven ticket system, giveaways (`/giveaway`), polls (`/poll`), a suggestion box with approve/deny, reaction roles, welcome/leave messages, custom embeds, and custom text commands with a per-server configurable prefix (`/setprefix`).
+**Engagement**: leveling/XP with `/rank`, a leaderboard, and level-up role rewards; starboard; a ticket system with category selection, staff claiming, transcript logging, and auto-close on inactivity; giveaways (`/giveaway`, with dashboard "End Now"); polls (`/poll`); a suggestion box with approve/deny; reaction roles; welcome/leave messages; custom embeds; and custom text commands with a per-server configurable prefix (`/setprefix`).
+
+**Access control**: Teams with granular permissions (`/team` bot command or the Teams dashboard page), per-server command enable/disable toggles, and everything gated so a Team only ever sees the dashboard pages and API routes its permissions actually cover.
 
 **Dashboard-only**: analytics (mod actions over time, top moderators, action-type breakdown), a searchable member browser with quick warn/kick/ban, and one-click JSON config backup/restore.
 
@@ -86,20 +89,23 @@ src/
     deploy-commands.js     registers slash commands with Discord
     commands/
       moderation/          /ban /kick /timeout /untimeout /tempban /warn /warnings /clearwarnings /note /purge /lock /unlock /lockdown /slowmode
-      config/               /setlogs /setprefix /dashboard
+      config/               /setlogs /setprefix /dashboard /team
       embeds/                /embed send|saved
       utility/               /ping /reactionrole /tag /rank /ticket /giveaway /poll /suggest /userinfo /serverinfo /avatar
-    events/                ready, interactionCreate, message create/update/delete, member add/remove, reactions, guildCreate
+    events/                ready, interactionCreate (incl. ticket/verify buttons + ticket category select), message create/update/delete, member add/remove, reactions, guildCreate
     automod/                spam / invite / banned-word / caps / mass-mention filters, anti-raid
-    utils/                  embed builder, mod-action executor, logger, event bus, permissions, leveling, starboard, tickets, scheduler (giveaways + temp-ban unbans)
+    utils/                  embed builder, mod-action executor, logger, event bus, permissions, leveling (+ level-role rewards), starboard, tickets (+ transcripts), giveaways, scheduler (giveaways + temp-ban unbans + stale-ticket auto-close)
   web/
     server.js              Express app + session + Socket.IO
     passport.js             Discord OAuth2 strategy
     routes/                 auth.js, dashboard.js (pages), api.js (JSON)
-    middleware/              login guard, per-guild permission guard
+    middleware/              login guard, per-guild + per-permission (Teams/RBAC) guards, rate limiters
     utils/                  validate.js (input validation helpers)
     views/                  EJS pages (dark theme, Discord-style)
     public/                 CSS + client-side JS (vanilla, no build step)
+brand/                    generated server/bot PFPs, banner, favicon, bio.txt, tos.txt, p.txt
+scripts/
+  generate-brand-assets.js  regenerates everything in brand/ (npm run generate-brand-assets)
 ```
 
 ## Notes
@@ -109,5 +115,7 @@ src/
 - **Custom commands** are triggered with a per-server prefix (default `!`, change with `/setprefix`), separate from the `/` slash commands, matching Carl-bot's "tags" behavior.
 - **Audit Log page** requires the bot to have the "View Audit Log" permission in the server (included in the default invite link).
 - **Theme & navigation**: click the moon/sun icon in the sidebar to toggle light/dark mode, and press `Ctrl+K` (or `Cmd+K` on Mac) anywhere on a server's dashboard to jump to any page instantly.
-- **Background scheduler**: a 20-second interval loop handles giveaway endings and temp-ban auto-unbans, so the bot process needs to stay running for those to fire on time.
+- **Background scheduler**: a 20-second interval loop handles giveaway endings, temp-ban auto-unbans, and stale-ticket auto-closing, so the bot process needs to stay running for those to fire on time.
+- **Teams/RBAC**: only users with Discord's own "Manage Server" (or Administrator) permission can create Teams or change their permissions — a Team can never grant itself more access, even if you give it every other permission. Regular Team members can only reach the specific dashboard pages and API routes their Team's permissions cover; direct links to other pages 403.
+- **Brand assets**: `brand/` has ready-to-upload server/bot profile pictures, a server banner, bios (`bio.txt`), and a Terms of Service / Privacy Policy (`tos.txt` / `p.txt`) written for CH Services. Regenerate the images anytime with `npm run generate-brand-assets` (uses `sharp`, a dev-only dependency).
 - The bot token you provided was pasted directly in chat — treat it as potentially exposed and consider regenerating it from the Developer Portal's Bot tab if this ever leaves your machine.
