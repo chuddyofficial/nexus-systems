@@ -2,10 +2,12 @@ const path = require('node:path');
 const http = require('node:http');
 const express = require('express');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const helmet = require('helmet');
 const { Server: SocketServer } = require('socket.io');
 
 const config = require('../config');
+const db = require('../database/db');
 const passport = require('./passport');
 const bus = require('../bot/utils/eventBus');
 const authRoutes = require('./routes/auth');
@@ -45,8 +47,16 @@ function createServer(client) {
   app.use(express.urlencoded({ extended: true, limit: '256kb' }));
   app.use(express.static(path.join(__dirname, 'public')));
 
+  // Persisted in MySQL (the sessions table is created automatically) rather
+  // than the default in-memory store. That in-memory store loses every
+  // logged-in session (including live console sockets) on every process
+  // restart — deadly for a bot that gets restarted often during deploys.
+  const sessionStore = new MySQLStore({ expiration: 1000 * 60 * 60 * 24 * 7, createDatabaseTable: true }, db.pool);
+  sessionStore.onReady?.().catch((err) => console.error('[session-store]', err));
+
   const sessionMiddleware = session({
     secret: config.sessionSecret,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -78,6 +88,9 @@ function createServer(client) {
   io.on('connection', (socket) => {
     const req = socket.request;
     if (!req.session?.passport?.user) {
+      // Emitted before disconnecting so the client can show *why* instead of
+      // just going quiet — most commonly an expired/invalidated session.
+      socket.emit('auth_error', 'Your session has expired — refresh the page and log in again.');
       socket.disconnect();
       return;
     }
@@ -90,6 +103,14 @@ function createServer(client) {
 
     socket.on('subscribe', (guildId) => {
       socket.data.guildId = guildId;
+      // Immediate proof-of-life so the console never looks silently dead —
+      // this event only goes to the subscribing socket, not broadcast.
+      socket.emit('console', {
+        guildId,
+        level: 'system',
+        message: 'Connected — live events for this server will appear here as they happen.',
+        at: Date.now(),
+      });
     });
 
     socket.on('disconnect', () => {

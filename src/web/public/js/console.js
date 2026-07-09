@@ -4,17 +4,55 @@
   const dot = document.getElementById('conn-dot');
   const text = document.getElementById('conn-text');
 
-  const socket = io();
+  function setStatus(state, message) {
+    dot.classList.toggle('live', state === 'live');
+    text.textContent = message;
+  }
+
+  function addSystemLine(message) {
+    box.appendChild(
+      el('div', { class: 'console-line system' }, [
+        el('span', { class: 'ts' }, new Date().toLocaleTimeString()),
+        el('span', { class: 'tag' }, '[SYSTEM]'),
+        el('span', {}, message),
+      ])
+    );
+    box.scrollTop = box.scrollHeight;
+  }
+
+  if (typeof io === 'undefined') {
+    setStatus('error', 'Failed to load the realtime client — check your connection and refresh.');
+    return;
+  }
+
+  const socket = io({ reconnectionAttempts: 20 });
+
+  setStatus('connecting', 'Connecting...');
 
   socket.on('connect', () => {
     socket.emit('subscribe', gid);
-    dot.classList.add('live');
-    text.textContent = 'Live';
+    setStatus('live', 'Live');
   });
 
-  socket.on('disconnect', () => {
-    dot.classList.remove('live');
-    text.textContent = 'Disconnected';
+  socket.on('disconnect', (reason) => {
+    setStatus('error', `Disconnected (${reason}) — reconnecting...`);
+  });
+
+  socket.on('connect_error', (err) => {
+    setStatus('error', `Connection failed: ${err.message}`);
+  });
+
+  socket.on('reconnect_attempt', () => {
+    setStatus('connecting', 'Reconnecting...');
+  });
+
+  socket.on('reconnect_failed', () => {
+    setStatus('error', 'Could not reconnect. Refresh the page to try again.');
+  });
+
+  socket.on('auth_error', (message) => {
+    setStatus('error', message);
+    addSystemLine(message);
   });
 
   socket.on('console', (payload) => {

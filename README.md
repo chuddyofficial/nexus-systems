@@ -110,7 +110,7 @@ scripts/
 
 ## Notes
 
-- **Sessions** use an in-memory store — logins reset when you restart the server. Fine for local use; swap in a persistent session store later if you deploy this somewhere.
+- **Sessions** are stored in MySQL (a `sessions` table is created automatically), so logins — and the live console's WebSocket auth — survive bot restarts and deploys. This also means the Live Console genuinely needs a valid, non-expired login; if you ever see it stuck on "Connecting..." or showing an auth error, just refresh and log in again.
 - **Bot status**: the bot's Discord presence shows "Watching Dashboard: localhost:3000" (Discord doesn't allow bots to post a clickable link in their status — only Twitch/YouTube streaming activities support that — so it's shown as text). The `/dashboard` slash command posts a clickable link instead.
 - **Custom commands** are triggered with a per-server prefix (default `!`, change with `/setprefix`), separate from the `/` slash commands, matching Carl-bot's "tags" behavior.
 - **Audit Log page** requires the bot to have the "View Audit Log" permission in the server (included in the default invite link).
