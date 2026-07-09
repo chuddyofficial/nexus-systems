@@ -12,6 +12,7 @@
           el('td', {}, [
             s.icon ? el('img', { src: s.icon, style: 'width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:8px;' }) : null,
             s.name,
+            s.vipActive ? ' 💎' : null,
           ]),
           el('td', {}, String(s.memberCount ?? '—')),
           el('td', { class: 'mono' }, s.ownerId),

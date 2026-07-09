@@ -31,6 +31,15 @@ module.exports = {
     const emojiInput = interaction.options.getString('emoji', true);
     const role = interaction.options.getRole('role', true);
 
+    const existing = await db.getReactionRoles(interaction.guild.id);
+    const cfg = await db.getGuildConfig(interaction.guild.id);
+    if (!cfg.vip_active && existing.length >= 10) {
+      return interaction.reply({
+        content: 'Free servers are limited to 10 reaction roles. Upgrade to VIP for unlimited — see the VIP page on the web dashboard.',
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const message = await interaction.channel.messages.fetch(messageId).catch(() => null);
     if (!message) {
       return interaction.reply({ content: "Couldn't find that message in this channel.", flags: MessageFlags.Ephemeral });

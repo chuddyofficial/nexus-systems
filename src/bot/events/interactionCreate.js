@@ -13,8 +13,11 @@ const config = require('../../config');
 const { closeCurrentTicket } = require('../utils/tickets');
 
 async function openTicketChannel(interaction, panel, categoryLabel) {
+  const cfg = await db.getGuildConfig(interaction.guild.id);
+  const isVip = cfg.vip_active;
+
   const channel = await interaction.guild.channels.create({
-    name: `ticket-${interaction.user.username}`.slice(0, 90),
+    name: `${isVip ? 'vip-' : ''}ticket-${interaction.user.username}`.slice(0, 90),
     type: ChannelType.GuildText,
     parent: panel.category_channel_id || undefined,
     permissionOverwrites: [
@@ -27,9 +30,9 @@ async function openTicketChannel(interaction, panel, categoryLabel) {
   await db.createTicket(interaction.guild.id, channel.id, interaction.user.id, categoryLabel, panel.id);
 
   const embed = new EmbedBuilder()
-    .setTitle(panel.embed_title || '🎫 Ticket Opened')
+    .setTitle(`${isVip ? '⭐ ' : ''}${panel.embed_title || '🎫 Ticket Opened'}`)
     .setDescription(
-      `Hi ${interaction.user}, support will be with you shortly.${categoryLabel ? `\n**Category:** ${categoryLabel}` : ''}\nUse the button below when this is resolved.`
+      `Hi ${interaction.user}, support will be with you shortly.${categoryLabel ? `\n**Category:** ${categoryLabel}` : ''}${isVip ? '\n⭐ **This server has VIP priority support.**' : ''}\nUse the button below when this is resolved.`
     )
     .setColor(panel.embed_color || config.brandColor);
   const row = new ActionRowBuilder().addComponents(

@@ -14,6 +14,29 @@ const { isSnowflake } = require('../utils/validate');
 
 const router = express.Router();
 
+// Free-tier caps — VIP servers (config.vip_active) are unlimited on all of
+// these. Enforced only at creation time, so a server that already exceeds
+// its cap (e.g. from before this existed) is never broken retroactively —
+// it just can't add more until it's VIP.
+const FREE_LIMITS = {
+  ticketPanels: { max: 2, label: 'ticket panels' },
+  customCommands: { max: 10, label: 'custom commands' },
+  savedEmbeds: { max: 5, label: 'saved embeds' },
+  levelRoles: { max: 5, label: 'level roles' },
+  reactionRoles: { max: 10, label: 'reaction roles' },
+};
+
+async function checkVipLimit(guildId, res, kind, currentCount) {
+  const { max, label } = FREE_LIMITS[kind];
+  const cfg = await db.getGuildConfig(guildId);
+  if (cfg.vip_active) return true;
+  if (currentCount >= max) {
+    res.status(403).json({ error: `Free servers are limited to ${max} ${label}. Upgrade to VIP for unlimited — see the VIP page in the sidebar.` });
+    return false;
+  }
+  return true;
+}
+
 // ---- Public-ish status (no guild data) ----
 router.get('/status', (req, res) => {
   const client = req.app.locals.discordClient;
@@ -210,6 +233,9 @@ router.get('/servers/:guildId/customcommands', async (req, res) => {
 router.post('/servers/:guildId/customcommands', requirePermission('manage_customcommands'), async (req, res) => {
   const { trigger, response } = req.body;
   if (!trigger) return res.status(400).json({ error: 'trigger is required' });
+  const existing = await db.getCustomCommands(req.params.guildId);
+  const isNew = !existing.some((c) => c.trigger.toLowerCase() === trigger.toLowerCase());
+  if (isNew && !(await checkVipLimit(req.params.guildId, res, 'customCommands', existing.length))) return;
   const saved = await db.upsertCustomCommand(req.params.guildId, trigger, response, null);
   res.json(saved);
 });
@@ -232,6 +258,9 @@ router.post('/servers/:guildId/embeds', requirePermission('manage_embeds'), asyn
   } catch (err) {
     return res.status(400).json({ error: `Invalid embed: ${err.message}` });
   }
+  const existing = await db.getSavedEmbeds(req.params.guildId);
+  const isNew = !existing.some((e) => e.name.toLowerCase() === name.toLowerCase());
+  if (isNew && !(await checkVipLimit(req.params.guildId, res, 'savedEmbeds', existing.length))) return;
   const saved = await db.saveEmbed(req.params.guildId, name, JSON.stringify(embed), req.user.id);
   res.json(saved);
 });
@@ -297,6 +326,8 @@ router.get('/servers/:guildId/tickets/panels', async (req, res) => {
 router.post('/servers/:guildId/tickets/panels', async (req, res) => {
   const { name } = req.body;
   if (!name || typeof name !== 'string' || name.length > 100) return res.status(400).json({ error: 'A valid panel name is required' });
+  const existing = await db.getTicketPanels(req.params.guildId);
+  if (!(await checkVipLimit(req.params.guildId, res, 'ticketPanels', existing.length))) return;
   res.json(await db.createTicketPanel(req.params.guildId, name));
 });
 
@@ -598,6 +629,42 @@ router.post('/servers/:guildId/verify/setup', requirePermission('manage_config')
   }
 });
 
+// ---- VIP status & perks (guild-scoped) ----
+router.get('/servers/:guildId/vip', async (req, res) => {
+  const cfg = await db.getGuildConfig(req.params.guildId);
+  res.json({
+    active: cfg.vip_active,
+    tier: cfg.vip_tier,
+    expiresAt: cfg.vip_expires_at,
+    nickname: cfg.vip_nickname,
+    limits: Object.fromEntries(Object.entries(FREE_LIMITS).map(([k, v]) => [k, v.max])),
+  });
+});
+
+router.post('/servers/:guildId/vip/redeem', requirePermission('manage_config'), async (req, res) => {
+  const { code } = req.body;
+  if (!code || typeof code !== 'string') return res.status(400).json({ error: 'Enter a code' });
+  try {
+    const cfg = await db.redeemVipCode(code.trim().toUpperCase(), req.params.guildId, req.user.id);
+    res.json(cfg);
+  } catch (err) {
+    res.status(err.status || 400).json({ error: err.message });
+  }
+});
+
+router.post('/servers/:guildId/vip/nickname', requirePermission('manage_config'), async (req, res) => {
+  const cfg = await db.getGuildConfig(req.params.guildId);
+  if (!cfg.vip_active) return res.status(403).json({ error: 'VIP only.' });
+  const nickname = (req.body.nickname || '').trim().slice(0, 32);
+  try {
+    await req.botGuild.members.me.setNickname(nickname || null);
+    const updated = await db.updateGuildConfig(req.params.guildId, { vip_nickname: nickname || null });
+    res.json(updated);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ---- Level roles ----
 router.get('/servers/:guildId/levelroles', async (req, res) => {
   res.json(await db.getLevelRoles(req.params.guildId));
@@ -609,6 +676,9 @@ router.post('/servers/:guildId/levelroles', requirePermission('manage_config'), 
   if (!Number.isInteger(levelNum) || levelNum < 1 || !isSnowflake(roleId)) {
     return res.status(400).json({ error: 'A valid level and role are required' });
   }
+  const existing = await db.getLevelRoles(req.params.guildId);
+  const isNew = !existing.some((r) => r.level === levelNum);
+  if (isNew && !(await checkVipLimit(req.params.guildId, res, 'levelRoles', existing.length))) return;
   await db.addLevelRole(req.params.guildId, levelNum, roleId);
   res.json({ ok: true });
 });
@@ -647,19 +717,24 @@ router.get('/admin/stats', (req, res) => {
   });
 });
 
-router.get('/admin/servers', (req, res) => {
+router.get('/admin/servers', async (req, res) => {
   const client = req.app.locals.discordClient;
-  const guilds = [...client.guilds.cache.values()]
-    .map((g) => ({
-      id: g.id,
-      name: g.name,
-      icon: g.iconURL() || null,
-      memberCount: g.memberCount,
-      ownerId: g.ownerId,
-      joinedAt: g.joinedAt ? g.joinedAt.toISOString() : null,
-    }))
-    .sort((a, b) => b.memberCount - a.memberCount);
-  res.json(guilds);
+  const guilds = await Promise.all(
+    [...client.guilds.cache.values()].map(async (g) => {
+      const cfg = await db.getGuildConfig(g.id);
+      return {
+        id: g.id,
+        name: g.name,
+        icon: g.iconURL() || null,
+        memberCount: g.memberCount,
+        ownerId: g.ownerId,
+        joinedAt: g.joinedAt ? g.joinedAt.toISOString() : null,
+        vipActive: cfg.vip_active,
+        vipTier: cfg.vip_tier,
+      };
+    })
+  );
+  res.json(guilds.sort((a, b) => b.memberCount - a.memberCount));
 });
 
 router.post('/admin/servers/:guildId/leave', async (req, res) => {
@@ -667,6 +742,7 @@ router.post('/admin/servers/:guildId/leave', async (req, res) => {
   const guild = client.guilds.cache.get(req.params.guildId);
   if (!guild) return res.status(404).json({ error: 'Server not found' });
   await guild.leave();
+  await db.logAdminAction(req.user.id, 'leave_server', `Left "${guild.name}" (${guild.id})`);
   res.json({ ok: true });
 });
 
@@ -688,6 +764,7 @@ router.post('/admin/broadcast', async (req, res) => {
       ];
     }
     await channel.send(payload);
+    await db.logAdminAction(req.user.id, 'broadcast', `Sent to #${channel.name} in "${guild.name}" (${guild.id})`);
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -726,23 +803,91 @@ router.post('/admin/broadcast-all', async (req, res) => {
       skipped++;
     }
   }
+  await db.logAdminAction(req.user.id, 'broadcast_all', `Sent to ${sent} server(s), skipped ${skipped}`);
   res.json({ ok: true, sent, skipped });
 });
 
 router.post('/admin/redeploy-commands', (req, res) => {
-  execFile('node', [path.join(__dirname, '../../bot/deploy-commands.js')], { timeout: 60_000 }, (err, stdout, stderr) => {
+  execFile('node', [path.join(__dirname, '../../bot/deploy-commands.js')], { timeout: 60_000 }, async (err, stdout, stderr) => {
     if (err) return res.status(500).json({ error: stderr || err.message });
+    await db.logAdminAction(req.user.id, 'redeploy_commands', null);
     res.json({ ok: true, output: stdout });
   });
 });
 
-router.post('/admin/restart', (req, res) => {
+router.post('/admin/restart', async (req, res) => {
+  await db.logAdminAction(req.user.id, 'restart', null);
   res.json({ ok: true });
   setTimeout(() => {
     // Exit non-zero so systemd's "Restart=on-failure" policy brings the
     // process back up — a clean exit(0) would NOT trigger a restart.
     process.exit(1);
   }, 500);
+});
+
+// ---- VIP codes & manual grants (owner-only) ----
+router.get('/admin/vip/codes', async (req, res) => {
+  res.json(await db.getVipCodes());
+});
+
+router.post('/admin/vip/codes', async (req, res) => {
+  const { duration, quantity, note } = req.body;
+  if (!['year', 'lifetime'].includes(duration)) return res.status(400).json({ error: 'duration must be "year" or "lifetime"' });
+  const qty = Math.min(Math.max(Number(quantity) || 1, 1), 50);
+  const codes = await db.generateVipCodes(req.user.id, duration, qty, note || null);
+  await db.logAdminAction(req.user.id, 'generate_vip_codes', `${codes.length}x ${duration}${note ? ` — ${note}` : ''}`);
+  res.json({ codes });
+});
+
+router.delete('/admin/vip/codes/:id', async (req, res) => {
+  const result = await db.deleteVipCode(req.params.id);
+  if (!result.changes) return res.status(400).json({ error: 'Code not found or already redeemed' });
+  res.json({ ok: true });
+});
+
+router.get('/admin/vip/servers', async (req, res) => {
+  const client = req.app.locals.discordClient;
+  const guilds = [...client.guilds.cache.values()];
+  const withVip = await Promise.all(
+    guilds.map(async (g) => {
+      const cfg = await db.getGuildConfig(g.id);
+      return { id: g.id, name: g.name, active: cfg.vip_active, tier: cfg.vip_tier, expiresAt: cfg.vip_expires_at };
+    })
+  );
+  res.json(withVip.sort((a, b) => Number(b.active) - Number(a.active) || a.name.localeCompare(b.name)));
+});
+
+router.post('/admin/vip/grant', async (req, res) => {
+  const { guildId, tier } = req.body;
+  const client = req.app.locals.discordClient;
+  const guild = client.guilds.cache.get(guildId);
+  if (!guild) return res.status(400).json({ error: 'Invalid server' });
+  if (!['year', 'lifetime'].includes(tier)) return res.status(400).json({ error: 'tier must be "year" or "lifetime"' });
+  const expiresAt = tier === 'lifetime' ? null : (() => {
+    const d = new Date();
+    d.setUTCFullYear(d.getUTCFullYear() + 1);
+    return d.toISOString().slice(0, 19).replace('T', ' ');
+  })();
+  const cfg = await db.grantVip(guildId, tier, expiresAt, null);
+  await db.logAdminAction(req.user.id, 'grant_vip', `Manually granted ${tier} VIP to "${guild.name}" (${guildId})`);
+  res.json(cfg);
+});
+
+router.post('/admin/vip/revoke', async (req, res) => {
+  const { guildId } = req.body;
+  const client = req.app.locals.discordClient;
+  const guild = client.guilds.cache.get(guildId);
+  const cfg = await db.revokeVip(guildId);
+  await db.logAdminAction(req.user.id, 'revoke_vip', `Revoked VIP from "${guild?.name || guildId}"`);
+  res.json(cfg);
+});
+
+router.get('/admin/vip/stats', async (req, res) => {
+  res.json(await db.getVipStats());
+});
+
+router.get('/admin/activity', async (req, res) => {
+  res.json(await db.getAdminAuditLog(200));
 });
 
 module.exports = router;

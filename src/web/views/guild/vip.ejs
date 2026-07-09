@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — VIP' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main" style="max-width:900px;">
+      <div class="page-header">
+        <h1>💎 VIP</h1>
+        <p>Unlock unlimited ticket panels, custom commands, saved embeds, level roles, reaction roles, priority-tagged tickets, and a custom bot nickname for this server.</p>
+      </div>
+
+      <div class="card" id="status-card">
+        <h2 id="status-title">Loading...</h2>
+        <p class="card-desc" id="status-desc"></p>
+      </div>
+
+      <div class="card" id="redeem-card" style="display:none;">
+        <h2>Redeem a Code</h2>
+        <p class="card-desc">Codes are issued by the Nexus Systems team. Enter yours below to activate VIP for this server.</p>
+        <div class="row">
+          <div class="field" style="flex:1;"><input type="text" id="redeem-code" placeholder="NEXUS-XXXX-XXXX-XXXX" style="text-transform:uppercase;" /></div>
+          <button class="btn btn-primary" style="flex:0 0 auto;" id="redeem-btn">Redeem</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Perks</h2>
+        <table>
+          <thead><tr><th>Feature</th><th>Free</th><th>VIP</th></tr></thead>
+          <tbody id="perks-body"></tbody>
+        </table>
+      </div>
+
+      <div class="card" id="nickname-card">
+        <h2>Custom Bot Nickname <span id="nickname-lock">🔒</span></h2>
+        <p class="card-desc">Give the bot a custom nickname in this server — VIP only.</p>
+        <div class="row">
+          <div class="field" style="flex:1;"><input type="text" id="nickname-input" maxlength="32" placeholder="e.g. Nexus" /></div>
+          <button class="btn btn-primary" style="flex:0 0 auto;" id="nickname-btn">Set Nickname</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/vip.js"></script>
+</body>
+</html>

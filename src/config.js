@@ -11,7 +11,7 @@ module.exports = {
   clientSecret: required('CLIENT_SECRET'),
   devGuildId: required('DEV_GUILD_ID', ''),
   port: parseInt(required('PORT', '3000'), 10),
-  dashboardUrl: required('DASHBOARD_URL', 'http://localhost:3000'),
+  dashboardUrl: required('DASHBOARD_URL', 'https://services.chnexus.net'),
   callbackUrl: required('CALLBACK_URL', 'http://localhost:3000/auth/discord/callback'),
   sessionSecret: required('SESSION_SECRET', 'dev-secret-change-me'),
   // Website admins: full site-wide control panel (/admin) — every server's

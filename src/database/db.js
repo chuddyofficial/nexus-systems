@@ -34,6 +34,7 @@ const CONFIG_COLUMNS = [
   'antiraid_enabled', 'antiraid_join_threshold', 'antiraid_join_window', 'antiraid_action',
   'antiraid_min_account_age_days', 'antiraid_alert_channel', 'antiraid_lockdown_active',
   'antinuke_enabled', 'antinuke_threshold', 'antinuke_window', 'antinuke_punishment',
+  'vip_nickname',
   'leveling_enabled', 'leveling_announce_channel', 'leveling_announce_message',
   'starboard_enabled', 'starboard_channel', 'starboard_emoji', 'starboard_threshold',
   'ticket_category_id', 'ticket_support_role_id', 'ticket_panel_channel', 'ticket_panel_message',
@@ -96,6 +97,10 @@ function normalizeConfig(row) {
   for (const col of BOOLEAN_COLUMNS) out[col] = !!out[col];
   out.automod_banned_words = safeJsonParse(row.automod_banned_words, []);
   out.automod_ignored_channels = safeJsonParse(row.automod_ignored_channels, []);
+  // Computed rather than a stored flag: a "year" VIP naturally lapses once
+  // vip_expires_at passes, with no scheduler sweep needed to keep this
+  // accurate — "lifetime" never expires (vip_expires_at stays NULL for it).
+  out.vip_active = !!row.vip_tier && (row.vip_tier === 'lifetime' || (!!row.vip_expires_at && new Date(row.vip_expires_at.replace(' ', 'T') + 'Z') > new Date()));
   return out;
 }
 
@@ -699,6 +704,124 @@ async function deleteLevelRole(guildId, id) {
   await pool.execute('DELETE FROM level_roles WHERE guild_id = ? AND id = ?', [guildId, id]);
 }
 
+// ---- VIP codes ----
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — avoids ambiguous codes
+
+function generateCodeString() {
+  let out = 'NEXUS';
+  for (let group = 0; group < 3; group++) {
+    out += '-';
+    for (let i = 0; i < 4; i++) out += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+  }
+  return out;
+}
+
+async function generateVipCodes(createdBy, duration, quantity, note) {
+  const codes = [];
+  for (let i = 0; i < quantity; i++) {
+    let code;
+    let inserted = false;
+    // Collisions are astronomically unlikely (32^12 keyspace) but retry a
+    // few times against the UNIQUE constraint just in case.
+    for (let attempt = 0; attempt < 5 && !inserted; attempt++) {
+      code = generateCodeString();
+      try {
+        await pool.execute('INSERT INTO vip_codes (code, duration, note, created_by) VALUES (?, ?, ?, ?)', [
+          code,
+          duration,
+          note || null,
+          createdBy,
+        ]);
+        inserted = true;
+      } catch (err) {
+        if (err.code !== 'ER_DUP_ENTRY') throw err;
+      }
+    }
+    if (inserted) codes.push(code);
+  }
+  return codes;
+}
+
+async function getVipCodes() {
+  const [rows] = await pool.execute('SELECT * FROM vip_codes ORDER BY created_at DESC');
+  return rows;
+}
+
+async function getVipCodeByCode(code) {
+  const [rows] = await pool.execute('SELECT * FROM vip_codes WHERE code = ?', [code]);
+  return rows[0];
+}
+
+async function deleteVipCode(id) {
+  const [result] = await pool.execute('DELETE FROM vip_codes WHERE id = ? AND redeemed_guild_id IS NULL', [id]);
+  return { changes: result.affectedRows };
+}
+
+function vipExpiryFor(duration) {
+  if (duration === 'lifetime') return null;
+  const d = new Date();
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return d.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+async function redeemVipCode(code, guildId, userId) {
+  const row = await getVipCodeByCode(code);
+  if (!row) throw Object.assign(new Error('Invalid code.'), { status: 400 });
+  if (row.redeemed_guild_id) throw Object.assign(new Error('This code has already been redeemed.'), { status: 400 });
+
+  const expiresAt = vipExpiryFor(row.duration);
+  await pool.execute(
+    'UPDATE vip_codes SET redeemed_guild_id = ?, redeemed_by = ?, redeemed_at = UTC_TIMESTAMP() WHERE id = ?',
+    [guildId, userId, row.id]
+  );
+  await grantVip(guildId, row.duration, expiresAt, row.code);
+  return getGuildConfig(guildId);
+}
+
+async function grantVip(guildId, tier, expiresAt, code = null) {
+  await getGuildConfig(guildId); // ensure row exists
+  await pool.execute(
+    'UPDATE guild_config SET vip_tier = ?, vip_expires_at = ?, vip_code = ?, vip_granted_at = UTC_TIMESTAMP() WHERE guild_id = ?',
+    [tier, tier === 'lifetime' ? null : expiresAt, code, guildId]
+  );
+  return getGuildConfig(guildId);
+}
+
+async function revokeVip(guildId) {
+  await pool.execute(
+    'UPDATE guild_config SET vip_tier = NULL, vip_expires_at = NULL, vip_code = NULL, vip_granted_at = NULL WHERE guild_id = ?',
+    [guildId]
+  );
+  return getGuildConfig(guildId);
+}
+
+async function getVipStats() {
+  const [[codeStats]] = await pool.query(`
+    SELECT COUNT(*) AS total, SUM(redeemed_guild_id IS NOT NULL) AS redeemed
+    FROM vip_codes
+  `);
+  const [[guildStats]] = await pool.query(`
+    SELECT COUNT(*) AS active
+    FROM guild_config
+    WHERE vip_tier = 'lifetime' OR (vip_tier = 'year' AND vip_expires_at > UTC_TIMESTAMP())
+  `);
+  return {
+    totalCodes: Number(codeStats.total) || 0,
+    redeemedCodes: Number(codeStats.redeemed) || 0,
+    activeVipServers: Number(guildStats.active) || 0,
+  };
+}
+
+// ---- Admin audit log (website admin panel actions) ----
+async function logAdminAction(actorId, action, detail) {
+  await pool.execute('INSERT INTO admin_audit_log (actor_id, action, detail) VALUES (?, ?, ?)', [actorId, action, detail || null]);
+}
+
+async function getAdminAuditLog(limit = 200) {
+  const [rows] = await pool.query('SELECT * FROM admin_audit_log ORDER BY created_at DESC LIMIT ?', [limit]);
+  return rows;
+}
+
 module.exports = {
   pool,
   initDb,
@@ -779,4 +902,14 @@ module.exports = {
   addLevelRole,
   getLevelRoles,
   deleteLevelRole,
+  generateVipCodes,
+  getVipCodes,
+  getVipCodeByCode,
+  deleteVipCode,
+  redeemVipCode,
+  grantVip,
+  revokeVip,
+  getVipStats,
+  logAdminAction,
+  getAdminAuditLog,
 };

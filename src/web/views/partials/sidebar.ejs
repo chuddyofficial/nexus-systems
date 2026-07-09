@@ -10,6 +10,7 @@
       <div class="icon-fallback" style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:13px;"><%= guild.name.slice(0,2).toUpperCase() %></div>
     <% } %>
     <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= guild.name %></span>
+    <% if (typeof vip !== 'undefined' && vip && vip.active) { %><span title="VIP server" style="margin-left:4px;">💎</span><% } %>
   </div>
 
   <div class="sidebar-tools">
@@ -25,6 +26,7 @@
   <a class="navlink <%= page === 'analytics' ? 'active' : '' %>" href="/servers/<%= guildId %>/analytics">📈 Analytics</a>
   <% if (canSee('manage_moderation')) { %><a class="navlink <%= page === 'members' ? 'active' : '' %>" href="/servers/<%= guildId %>/members">👥 Members</a><% } %>
   <a class="navlink <%= page === 'console' ? 'active' : '' %>" href="/servers/<%= guildId %>/console">🖥️ Live Console</a>
+  <a class="navlink <%= page === 'vip' ? 'active' : '' %>" href="/servers/<%= guildId %>/vip">💎 VIP</a>
 
   <% if (canSee('manage_moderation') || canSee('manage_config') || canSee('manage_automod') || canSee('manage_antiraid')) { %>
   <div class="nav-section">Moderation</div>

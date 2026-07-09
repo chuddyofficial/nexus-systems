@@ -265,6 +265,32 @@ ALTER TABLE guild_config ADD COLUMN antinuke_threshold INT NOT NULL DEFAULT 5;
 ALTER TABLE guild_config ADD COLUMN antinuke_window INT NOT NULL DEFAULT 10000;
 ALTER TABLE guild_config ADD COLUMN antinuke_punishment VARCHAR(16) NOT NULL DEFAULT 'strip_roles';
 
+ALTER TABLE guild_config ADD COLUMN vip_tier VARCHAR(16);
+ALTER TABLE guild_config ADD COLUMN vip_expires_at DATETIME NULL;
+ALTER TABLE guild_config ADD COLUMN vip_code VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN vip_granted_at DATETIME NULL;
+ALTER TABLE guild_config ADD COLUMN vip_nickname VARCHAR(32);
+
+CREATE TABLE IF NOT EXISTS vip_codes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(32) NOT NULL UNIQUE,
+  duration VARCHAR(16) NOT NULL,
+  note VARCHAR(200),
+  created_by VARCHAR(32) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  redeemed_guild_id VARCHAR(32),
+  redeemed_by VARCHAR(32),
+  redeemed_at DATETIME NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  actor_id VARCHAR(32) NOT NULL,
+  action VARCHAR(64) NOT NULL,
+  detail VARCHAR(500),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE INDEX idx_warnings_guild_user ON warnings(guild_id, user_id);
 CREATE INDEX idx_modactions_guild ON mod_actions(guild_id);
 CREATE INDEX idx_reactionroles_message ON reaction_roles(guild_id, message_id);
@@ -279,3 +305,5 @@ CREATE INDEX idx_teammembers_guild_discord ON team_members(guild_id, discord_id)
 CREATE INDEX idx_levelroles_guild ON level_roles(guild_id);
 CREATE INDEX idx_ticketpanels_guild ON ticket_panels(guild_id);
 CREATE INDEX idx_ticketpaneloptions_panel ON ticket_panel_options(panel_id);
+CREATE INDEX idx_vipcodes_redeemed_guild ON vip_codes(redeemed_guild_id);
+CREATE INDEX idx_adminauditlog_created ON admin_audit_log(created_at);

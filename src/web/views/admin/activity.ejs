@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: 'Website Admin — Activity' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/adminSidebar', { page: 'activity' }) %>
+    <main class="main" style="max-width:1000px;">
+      <div class="page-header">
+        <h1>Activity</h1>
+        <p>A log of every action taken from the Website Admin panel — VIP grants, broadcasts, server removals, restarts, and more.</p>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr><th>When</th><th>Action</th><th>Detail</th></tr></thead>
+          <tbody id="activity-body"></tbody>
+        </table>
+        <div id="activity-empty" class="empty-state" style="display:none;">No activity yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/admin-activity.js"></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 const express = require('express');
 const config = require('../../config');
+const db = require('../../database/db');
 const { ensureAuth } = require('../middleware/ensureAuth');
 const { ensureGuildAccess } = require('../middleware/ensureGuildAccess');
 const { ensureOwner, isOwner } = require('../middleware/ensureOwner');
@@ -27,7 +28,7 @@ router.get('/servers', ensureAuth, (req, res) => {
 });
 
 // ---- Website Admin (owner-only, site-wide bot control) ----
-const adminPages = ['overview', 'servers', 'broadcast', 'system'];
+const adminPages = ['overview', 'servers', 'vip', 'broadcast', 'activity', 'system'];
 for (const page of adminPages) {
   const urlPath = page === 'overview' ? '/admin' : `/admin/${page}`;
   router.get(urlPath, ensureAuth, ensureOwner, (req, res) => {
@@ -87,12 +88,13 @@ const guildPages = [
   'analytics',
   'members',
   'backup',
+  'vip',
   'console',
 ];
 
 for (const page of guildPages) {
   const urlPath = page === 'overview' ? '/servers/:guildId' : `/servers/:guildId/${page}`;
-  router.get(urlPath, ensureAuth, ensureGuildAccess, (req, res) => {
+  router.get(urlPath, ensureAuth, ensureGuildAccess, async (req, res) => {
     const required = PAGE_PERMISSIONS[page];
     if (required !== undefined && !req.isServerManager) {
       const allowed = required === null ? false : required.some((p) => req.userPermissions.has(p));
@@ -100,6 +102,7 @@ for (const page of guildPages) {
         return res.status(403).render('error', { message: "You don't have permission to view that page." });
       }
     }
+    const cfg = await db.getGuildConfig(req.params.guildId);
     res.render(`guild/${page}`, {
       user: req.user,
       guild: req.botGuild,
@@ -107,6 +110,7 @@ for (const page of guildPages) {
       page,
       isServerManager: req.isServerManager,
       userPermissions: req.isServerManager ? null : [...req.userPermissions],
+      vip: { active: cfg.vip_active, tier: cfg.vip_tier },
     });
   });
 }

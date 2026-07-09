@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: 'Website Admin — VIP' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/adminSidebar', { page: 'vip' }) %>
+    <main class="main" style="max-width:1100px;">
+      <div class="page-header">
+        <h1>💎 VIP</h1>
+        <p>Generate redemption codes, track who's redeemed them, and manually grant or revoke VIP for any server.</p>
+      </div>
+
+      <div class="grid grid-3" id="stat-tiles">
+        <div class="stat-tile"><div class="stat-value" id="stat-total-codes">—</div><div class="stat-label">Codes Generated</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-redeemed-codes">—</div><div class="stat-label">Codes Redeemed</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-active-vip">—</div><div class="stat-label">Active VIP Servers</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Generate Codes</h2>
+        <div class="row">
+          <div class="field">
+            <label>Duration</label>
+            <select id="gen-duration">
+              <option value="year">1 Year</option>
+              <option value="lifetime">Lifetime</option>
+            </select>
+          </div>
+          <div class="field"><label>Quantity</label><input type="number" id="gen-quantity" value="1" min="1" max="50" /></div>
+          <div class="field" style="flex:2;"><label>Note (optional)</label><input type="text" id="gen-note" placeholder="e.g. giveaway winners" /></div>
+        </div>
+        <button class="btn btn-primary" id="gen-btn">✨ Generate</button>
+        <div id="gen-output" style="display:none;margin-top:14px;">
+          <p class="card-desc">New codes — copy these now, they're also saved in the list below:</p>
+          <pre id="gen-codes" class="mono" style="padding:12px;background:var(--bg-card);border-radius:var(--radius-sm);white-space:pre-wrap;font-size:13px;"></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Manually Grant / Revoke VIP</h2>
+        <div class="row">
+          <div class="field" style="flex:2;"><label>Server</label><select id="grant-server"></select></div>
+          <div class="field">
+            <label>Tier</label>
+            <select id="grant-tier">
+              <option value="year">1 Year</option>
+              <option value="lifetime">Lifetime</option>
+            </select>
+          </div>
+        </div>
+        <div class="cta" style="justify-content:flex-start;">
+          <button class="btn btn-primary" id="grant-btn">Grant VIP</button>
+          <button class="btn btn-danger" id="revoke-btn">Revoke VIP</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>VIP Servers</h2>
+        <table>
+          <thead><tr><th>Server</th><th>Tier</th><th>Expires</th></tr></thead>
+          <tbody id="vip-servers-body"></tbody>
+        </table>
+        <div id="vip-servers-empty" class="empty-state" style="display:none;">No VIP servers yet.</div>
+      </div>
+
+      <div class="card">
+        <h2>All Codes</h2>
+        <table>
+          <thead><tr><th>Code</th><th>Duration</th><th>Status</th><th>Note</th><th></th></tr></thead>
+          <tbody id="codes-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/admin-vip.js"></script>
+</body>
+</html>

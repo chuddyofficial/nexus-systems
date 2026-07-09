@@ -180,6 +180,7 @@ function initCommandPalette(guildId) {
     { label: 'Members', href: `/servers/${guildId}/members` },
     { label: 'Backup & Restore', href: `/servers/${guildId}/backup` },
     { label: 'Live Console', href: `/servers/${guildId}/console` },
+    { label: 'VIP', href: `/servers/${guildId}/vip` },
     { label: '← All Servers', href: `/servers` },
   ];
 
