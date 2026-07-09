@@ -26,6 +26,33 @@ router.get('/servers', ensureAuth, (req, res) => {
 });
 
 // Simple guild pages: just render guild/<page> with the standard locals.
+// Pages not listed here (overview, analytics, modlog, auditlog, console) are
+// visible to anyone with any dashboard access — everything else requires at
+// least one of the listed permissions, mirroring the sidebar's visibility
+// rules so a direct link never reveals more than the nav does. `null` means
+// "server managers only" (Teams itself, to prevent privilege escalation).
+const PAGE_PERMISSIONS = {
+  moderation: ['manage_moderation'],
+  automod: ['manage_automod', 'manage_config'],
+  antiraid: ['manage_antiraid', 'manage_config'],
+  verify: ['manage_config'],
+  warnings: ['manage_moderation'],
+  notes: ['manage_moderation'],
+  members: ['manage_moderation'],
+  leveling: ['manage_config'],
+  starboard: ['manage_config'],
+  tickets: ['manage_tickets'],
+  giveaways: ['manage_giveaways'],
+  suggestions: ['manage_suggestions'],
+  reactionroles: ['manage_reactionroles'],
+  welcome: ['manage_config'],
+  embeds: ['manage_embeds'],
+  customcommands: ['manage_customcommands'],
+  commands: ['manage_commands'],
+  backup: ['manage_config'],
+  teams: null,
+};
+
 const guildPages = [
   'overview',
   'automod',
@@ -56,6 +83,13 @@ const guildPages = [
 for (const page of guildPages) {
   const urlPath = page === 'overview' ? '/servers/:guildId' : `/servers/:guildId/${page}`;
   router.get(urlPath, ensureAuth, ensureGuildAccess, (req, res) => {
+    const required = PAGE_PERMISSIONS[page];
+    if (required !== undefined && !req.isServerManager) {
+      const allowed = required === null ? false : required.some((p) => req.userPermissions.has(p));
+      if (!allowed) {
+        return res.status(403).render('error', { message: "You don't have permission to view that page." });
+      }
+    }
     res.render(`guild/${page}`, {
       user: req.user,
       guild: req.botGuild,

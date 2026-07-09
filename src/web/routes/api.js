@@ -487,7 +487,7 @@ router.post('/servers/:guildId/commands/:name/toggle', requirePermission('manage
 });
 
 // ---- Teams / permissions (RBAC) ----
-router.get('/servers/:guildId/teams', async (req, res) => {
+router.get('/servers/:guildId/teams', requireServerManager, async (req, res) => {
   const teams = await db.getTeams(req.params.guildId);
   const withMembers = await Promise.all(
     teams.map(async (team) => ({ ...team, members: await db.getTeamMembers(req.params.guildId, team.id) }))
