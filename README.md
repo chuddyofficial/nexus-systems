@@ -1,4 +1,4 @@
-# ModBot — Advanced Discord Moderation Bot + Web Dashboard
+# Nexus Systems — Community Security & Moderation Bot + Web Dashboard
 
 A Carl-bot style moderation bot with a full web dashboard: login with Discord, manage every server you have **Manage Server** permission in, configure AutoMod, logging, welcome/leave messages, reaction roles, custom commands, and build/send custom embeds with a live preview — all from the browser.
 
@@ -10,7 +10,7 @@ handles Node.js, nginx, HTTPS (Let's Encrypt), and a systemd service for you.
 
 - **Bot** (discord.js v14, 30 slash commands): moderation, AutoMod, anti-raid, temp-bans, leveling/XP, starboard, tickets, giveaways, polls, suggestions, moderator notes, reaction roles, custom text commands, custom embeds, and more (full list below).
 - **Dashboard** (Express + EJS): Discord OAuth2 login, light/dark theme, a command palette (Ctrl/Cmd+K), a visual embed builder with a live Discord-style preview, analytics charts, a member browser, an audit log viewer, config backup/restore, and a live console (Socket.IO) streaming bot events in real time.
-- **Storage**: SQLite via Node's built-in `node:sqlite` module — no native build tools required.
+- **Storage**: MySQL, via a connection pool (`mysql2`) — built for multi-tenant scale, with every Discord server's config, warnings, tickets, etc. isolated by `guild_id`. `install.sh` provisions MySQL automatically on the VPS.
 
 ## Feature list
 
@@ -27,7 +27,14 @@ handles Node.js, nginx, HTTPS (Let's Encrypt), and a systemd service for you.
    npm install
    ```
 
-2. **Discord Developer Portal** — https://discord.com/developers/applications → your application:
+2. **A local MySQL (or MariaDB) server**, running and reachable — the app connects to it on startup and creates all tables automatically. Any recent MySQL 8.x or MariaDB 10.x/11.x works. Once it's running, create a database and user:
+   ```sql
+   CREATE DATABASE nexus_systems CHARACTER SET utf8mb4;
+   CREATE USER 'nexus'@'localhost' IDENTIFIED BY 'some-password';
+   GRANT ALL PRIVILEGES ON nexus_systems.* TO 'nexus'@'localhost';
+   ```
+
+3. **Discord Developer Portal** — https://discord.com/developers/applications → your application:
    - **OAuth2 → General**: add this exact Redirect URI, then Save Changes:
      ```
      http://localhost:3000/auth/discord/callback
@@ -37,17 +44,20 @@ handles Node.js, nginx, HTTPS (Let's Encrypt), and a systemd service for you.
      - `MESSAGE CONTENT INTENT`
      (Required for welcome/leave messages, moderation, and AutoMod message scanning.)
 
-3. **`.env` file** (already created at the project root) — confirm these are filled in:
+4. **`.env` file** (already created at the project root) — confirm these are filled in:
    - `DISCORD_TOKEN` — your bot token
    - `CLIENT_ID` — your application/client ID
    - `CLIENT_SECRET` — from OAuth2 → General → "Client Secret" (**required** for the dashboard login to work)
    - `DEV_GUILD_ID` *(optional)* — set this to a test server's ID while developing so slash commands register instantly instead of waiting up to an hour for global propagation.
+   - `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` — matching whatever you set up in step 2 (defaults to `127.0.0.1:3306`, user `nexus`, database `nexus_systems`).
 
-4. **Invite the bot to a server** using an invite URL of this shape (replace `CLIENT_ID`):
+5. **Invite the bot to a server** using an invite URL of this shape (replace `CLIENT_ID`):
    ```
    https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=1099511627775&scope=bot%20applications.commands
    ```
    (The dashboard's home page and server picker also generate this link for you.)
+
+On a real VPS, none of this is manual — `sudo ./install.sh` installs and configures MySQL for you. See **[DEPLOY.md](DEPLOY.md)**.
 
 ## Running it
 
@@ -67,8 +77,8 @@ src/
   index.js              entrypoint — starts the bot and the web server together
   config.js              loads .env
   database/
-    schema.sql            table definitions
-    db.js                 all queries (shared by bot + web)
+    schema.sql            MySQL table definitions
+    db.js                 connection pool + all queries (async, shared by bot + web)
   bot/
     client.js             discord.js Client + intents
     commandHandler.js      loads slash commands from bot/commands/**
@@ -87,6 +97,7 @@ src/
     passport.js             Discord OAuth2 strategy
     routes/                 auth.js, dashboard.js (pages), api.js (JSON)
     middleware/              login guard, per-guild permission guard
+    utils/                  validate.js (input validation helpers)
     views/                  EJS pages (dark theme, Discord-style)
     public/                 CSS + client-side JS (vanilla, no build step)
 ```

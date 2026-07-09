@@ -17,4 +17,11 @@ module.exports = {
   ownerIds: (required('OWNER_IDS', '') || '').split(',').map((s) => s.trim()).filter(Boolean),
   brandColor: 0x5865f2,
   isProduction: required('NODE_ENV', 'development') === 'production',
+  db: {
+    host: required('DB_HOST', '127.0.0.1'),
+    port: parseInt(required('DB_PORT', '3306'), 10),
+    user: required('DB_USER', 'nexus'),
+    password: required('DB_PASSWORD', ''),
+    database: required('DB_NAME', 'nexus_systems'),
+  },
 };

@@ -6,7 +6,7 @@ const { replacePlaceholders } = require('../utils/embedBuilder');
 module.exports = {
   name: 'guildMemberRemove',
   async execute(member) {
-    const cfg = db.getGuildConfig(member.guild.id);
+    const cfg = await db.getGuildConfig(member.guild.id);
 
     await sendJoinLog(member.guild, {
       title: 'Member Left',

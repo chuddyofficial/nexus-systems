@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# ModBot installer — provisions a fresh Ubuntu 22.04 (Jammy) VPS to run this
-# bot + dashboard behind nginx with a free Let's Encrypt SSL certificate.
+# Nexus Systems installer — provisions a fresh Ubuntu 22.04 (Jammy) VPS to
+# run this bot + dashboard behind nginx with a free Let's Encrypt SSL
+# certificate, backed by a dedicated local MySQL database.
 #
 # Usage: run this from inside the cloned repo, as root (or via sudo):
 #   sudo ./install.sh
@@ -22,10 +23,12 @@ fail()  { echo -e "${C_RED}✗ $*${C_RESET}" >&2; exit 1; }
 section() { echo -e "\n${C_BOLD}${C_BLUE}== $* ==${C_RESET}"; }
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_USER="modbot"
-SERVICE_NAME="modbot"
+SERVICE_USER="nexus"
+SERVICE_NAME="nexus"
 NODE_MAJOR="24"
 ENV_FILE="$APP_DIR/.env"
+DB_NAME="nexus_systems"
+DB_USER="nexus"
 
 # ---------------------------------------------------------------------------
 # Preflight
@@ -50,7 +53,7 @@ fi
 ok "App directory: $APP_DIR"
 
 # ---------------------------------------------------------------------------
-# Swap file (2GB RAM VPS benefits from headroom during npm install / apt)
+# Swap file (2GB RAM VPS benefits from headroom during npm install / apt / MySQL)
 # ---------------------------------------------------------------------------
 section "Checking memory / swap"
 
@@ -84,6 +87,47 @@ apt-get install -y curl git ufw nginx certbot python3-certbot-nginx ca-certifica
 ok "System packages installed"
 
 # ---------------------------------------------------------------------------
+# MySQL Server
+# ---------------------------------------------------------------------------
+section "Installing MySQL"
+
+if command -v mysql >/dev/null 2>&1; then
+  ok "MySQL already installed: $(mysql --version)"
+else
+  apt-get install -y mysql-server
+  systemctl enable mysql
+  systemctl start mysql
+  ok "Installed MySQL: $(mysql --version)"
+fi
+
+systemctl is-active --quiet mysql || fail "MySQL did not start — check: journalctl -u mysql -n 50 --no-pager"
+
+# Reuse a previously generated DB password across re-runs so we don't
+# desync the app's .env from the actual MySQL user password.
+existing_env_value() {
+  local key="$1"
+  if [[ -f "$ENV_FILE" ]]; then
+    grep -E "^${key}=" "$ENV_FILE" | head -n1 | cut -d'=' -f2- || true
+  fi
+}
+DB_PASSWORD="$(existing_env_value DB_PASSWORD)"
+if [[ -z "$DB_PASSWORD" ]]; then
+  DB_PASSWORD="$(openssl rand -hex 24)"
+fi
+
+# Root on a fresh `apt install mysql-server` uses unix socket auth, so `mysql`
+# run as root needs no password. Provisioning is fully idempotent.
+mysql --protocol=socket -u root <<SQL
+CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
+GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';
+FLUSH PRIVILEGES;
+SQL
+
+ok "Database '${DB_NAME}' and user '${DB_USER}'@'localhost' ready"
+
+# ---------------------------------------------------------------------------
 # Node.js
 # ---------------------------------------------------------------------------
 section "Installing Node.js ${NODE_MAJOR}.x"
@@ -112,14 +156,6 @@ fi
 # App configuration (.env)
 # ---------------------------------------------------------------------------
 section "Configuring the bot (.env)"
-
-# Reads an existing value out of .env, if present.
-existing_env_value() {
-  local key="$1"
-  if [[ -f "$ENV_FILE" ]]; then
-    grep -E "^${key}=" "$ENV_FILE" | head -n1 | cut -d'=' -f2- || true
-  fi
-}
 
 prompt_with_default() {
   local prompt="$1" default="$2" input
@@ -185,9 +221,19 @@ NODE_ENV=production
 DASHBOARD_URL=https://${DOMAIN}
 CALLBACK_URL=https://${DOMAIN}/auth/discord/callback
 SESSION_SECRET=${SESSION_SECRET}
+
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASSWORD}
+DB_NAME=${DB_NAME}
 EOF
 
-ok ".env written"
+# .env holds live secrets (bot token, client secret, DB password, session
+# secret) — keep it unreadable to anyone but the service user and root.
+chmod 600 "$ENV_FILE"
+
+ok ".env written (permissions restricted to owner)"
 
 # ---------------------------------------------------------------------------
 # Install dependencies
@@ -219,8 +265,9 @@ section "Creating systemd service"
 
 cat > "/etc/systemd/system/${SERVICE_NAME}.service" <<EOF
 [Unit]
-Description=ModBot Discord bot + dashboard
-After=network.target
+Description=Nexus Systems Discord bot + dashboard
+After=network.target mysql.service
+Wants=mysql.service
 
 [Service]
 Type=simple
@@ -232,6 +279,12 @@ RestartSec=5
 StandardOutput=journal
 StandardError=journal
 
+# Light sandboxing — the service only needs to read/write its own directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=${APP_DIR}
+
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -239,7 +292,7 @@ EOF
 systemctl daemon-reload
 systemctl enable "$SERVICE_NAME"
 systemctl restart "$SERVICE_NAME"
-sleep 2
+sleep 3
 
 if systemctl is-active --quiet "$SERVICE_NAME"; then
   ok "$SERVICE_NAME service is running"
@@ -330,9 +383,10 @@ fi
 # ---------------------------------------------------------------------------
 section "Done"
 
-echo -e "${C_GREEN}${C_BOLD}ModBot is installed.${C_RESET}"
+echo -e "${C_GREEN}${C_BOLD}Nexus Systems is installed.${C_RESET}"
 echo
 echo "Dashboard:      https://${DOMAIN}"
+echo "Database:       MySQL, database '${DB_NAME}', local-only (not exposed to the internet)"
 echo "Service status: systemctl status ${SERVICE_NAME}"
 echo "Live logs:      journalctl -u ${SERVICE_NAME} -f"
 echo "Restart:        sudo systemctl restart ${SERVICE_NAME}"

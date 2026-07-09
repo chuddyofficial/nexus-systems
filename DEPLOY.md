@@ -1,7 +1,7 @@
-# Deploying to your VPS
+# Deploying Nexus Systems to your VPS
 
 This walks through getting this repo onto GitHub, then onto your Ubuntu 22.04
-VPS, with a real domain and HTTPS.
+VPS, with a real domain, HTTPS, and a dedicated MySQL database.
 
 ## 1. Push this repo to GitHub
 
@@ -53,8 +53,8 @@ ssh root@<your-vps-ip>
 Then clone your repo:
 
 ```
-git clone https://github.com/<you>/<repo>.git modbot
-cd modbot
+git clone https://github.com/<you>/<repo>.git nexus-systems
+cd nexus-systems
 ```
 
 ## 4. Run the installer
@@ -67,21 +67,27 @@ This single script:
 
 - Creates a 2GB swap file if your VPS is low on RAM and doesn't have one
   (recommended for a 2GB droplet/VPS)
-- Installs Node.js, nginx, and certbot
-- Creates a dedicated `modbot` system user to run the bot (not root)
-- Prompts you for your bot token, client ID/secret, and domain — writes `.env`
+- Installs Node.js, **MySQL Server**, nginx, and certbot
+- Creates a dedicated MySQL database (`nexus_systems`) and a database user
+  scoped to only that database, with a randomly generated password — MySQL
+  itself is never exposed to the internet, only reachable from localhost
+- Creates a dedicated `nexus` system user to run the bot (not root), and a
+  sandboxed systemd service (read-only filesystem access outside its own
+  directory)
+- Prompts you for your bot token, client ID/secret, and domain — writes
+  `.env` with `chmod 600` so only the service user and root can read it
 - Installs npm dependencies and registers your slash commands
-- Creates and starts a `systemd` service (`modbot`) so the bot auto-restarts
-  on crash or VPS reboot
-- Configures `ufw` (firewall) to allow SSH + HTTP/HTTPS
+- Starts a `systemd` service (`nexus`) so the bot auto-restarts on crash or
+  VPS reboot, and auto-creates all database tables on first boot
+- Configures `ufw` (firewall) to allow SSH + HTTP/HTTPS only
 - Configures nginx as a reverse proxy in front of the bot's internal port
 - Shows you the VPS's public IP and waits for you to confirm DNS is pointed
   at it, then requests a free Let's Encrypt SSL certificate via certbot and
   enables HTTPS with auto-redirect
 
 It's safe to re-run `sudo ./install.sh` any time — it skips steps that are
-already done and lets you update values (leave a prompt blank to keep the
-current value).
+already done, reuses the existing database password, and lets you update
+values (leave a prompt blank to keep the current value).
 
 ## 5. Finish Discord setup
 
@@ -100,16 +106,22 @@ Then open `https://<your-domain>` and log in.
 ## Managing the bot on the VPS
 
 ```
-systemctl status modbot        # is it running?
-journalctl -u modbot -f        # live logs
-sudo systemctl restart modbot  # restart
-sudo systemctl stop modbot     # stop
+systemctl status nexus        # is it running?
+journalctl -u nexus -f        # live logs
+sudo systemctl restart nexus  # restart
+sudo systemctl stop nexus     # stop
+```
+
+To inspect the database directly:
+
+```
+sudo mysql nexus_systems
 ```
 
 ## Updating after you push new commits
 
 ```
-cd modbot
+cd nexus-systems
 sudo ./update.sh
 ```
 
@@ -124,7 +136,18 @@ changed slash commands, and restarts the service.
 - **"Invalid OAuth2 redirect_uri" on login**: the redirect URI in the
   Developer Portal doesn't exactly match `https://<domain>/auth/discord/callback`
   — check for typos, a trailing slash, or `http` vs `https`.
-- **Bot won't start**: `journalctl -u modbot -n 100 --no-pager` shows the
-  real error — usually a bad token or missing `.env` value.
+- **Bot won't start / "Failed to connect to MySQL"**:
+  `journalctl -u nexus -n 100 --no-pager` shows the real error. Confirm
+  MySQL is running (`systemctl status mysql`) and the `DB_*` values in
+  `.env` are correct.
 - **502 Bad Gateway from nginx**: the bot process isn't running or crashed —
-  check `systemctl status modbot` and the journal logs above.
+  check `systemctl status nexus` and the journal logs above.
+
+## Scaling to many servers
+
+This bot is built for multi-tenancy out of the box — every Discord server
+gets its own independent row in `guild_config` and its own settings, so one
+deployment can serve as many servers as your VPS can handle. For a 2GB VPS,
+that's comfortably thousands of small-to-medium servers; if you outgrow it,
+the usual path is a larger VPS (more RAM mainly benefits MySQL's buffer
+pool) — the app code itself doesn't need to change.

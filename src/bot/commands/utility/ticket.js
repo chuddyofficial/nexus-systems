@@ -46,7 +46,7 @@ module.exports = {
 
       const panelMessage = await panelChannel.send({ embeds: [embed], components: [row] });
 
-      db.updateGuildConfig(interaction.guild.id, {
+      await db.updateGuildConfig(interaction.guild.id, {
         ticket_category_id: category.id,
         ticket_support_role_id: supportRole.id,
         ticket_panel_channel: panelChannel.id,

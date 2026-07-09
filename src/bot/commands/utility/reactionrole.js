@@ -21,7 +21,7 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'list') {
-      const rows = db.getReactionRoles(interaction.guild.id);
+      const rows = await db.getReactionRoles(interaction.guild.id);
       if (!rows.length) return interaction.reply({ content: 'No reaction roles configured.', flags: MessageFlags.Ephemeral });
       const lines = rows.map((r) => `#${r.id} — <#${r.channel_id}> msg \`${r.message_id}\`: ${r.emoji} → <@&${r.role_id}>`);
       return interaction.reply({ content: lines.join('\n'), flags: MessageFlags.Ephemeral });
@@ -40,7 +40,7 @@ module.exports = {
     const emojiMatch = emojiInput.match(/^<a?:\w+:(\d+)>$/);
     const emojiKey = emojiMatch ? emojiMatch[1] : emojiInput;
 
-    db.addReactionRole(interaction.guild.id, interaction.channel.id, messageId, emojiKey, role.id);
+    await db.addReactionRole(interaction.guild.id, interaction.channel.id, messageId, emojiKey, role.id);
     await interaction.reply({ content: `Reaction role added: ${emojiInput} → ${role}`, flags: MessageFlags.Ephemeral });
   },
 };

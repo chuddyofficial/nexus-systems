@@ -11,7 +11,7 @@ module.exports = {
 
   async execute(interaction) {
     const prefix = interaction.options.getString('prefix', true);
-    db.updateGuildConfig(interaction.guild.id, { prefix });
+    await db.updateGuildConfig(interaction.guild.id, { prefix });
     await interaction.reply({ content: `Custom command prefix set to \`${prefix}\`.` });
   },
 };

@@ -1,11 +1,12 @@
 const express = require('express');
-const { ChannelType, EmbedBuilder } = require('discord.js');
+const { ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../../database/db');
 const config = require('../../config');
 const { ensureAuthApi } = require('../middleware/ensureAuth');
-const { ensureGuildAccess } = require('../middleware/ensureGuildAccess');
+const { ensureGuildAccess, userManagesGuild } = require('../middleware/ensureGuildAccess');
 const { buildEmbedFromData } = require('../../bot/utils/embedBuilder');
 const { performBan, performKick, performTimeout, performWarn, performTempBan } = require('../../bot/utils/modActions');
+const { isSnowflake } = require('../utils/validate');
 
 const router = express.Router();
 
@@ -26,7 +27,6 @@ router.use(ensureAuthApi);
 // ---- Guild list for the logged-in user ----
 router.get('/servers', (req, res) => {
   const client = req.app.locals.discordClient;
-  const { userManagesGuild } = require('../middleware/ensureGuildAccess');
   const managed = (req.user.guilds || []).filter(userManagesGuild);
   const result = managed.map((g) => {
     const botGuild = client.guilds.cache.get(g.id);
@@ -44,12 +44,12 @@ router.get('/servers', (req, res) => {
 router.use('/servers/:guildId', ensureGuildAccess);
 
 // ---- Guild config ----
-router.get('/servers/:guildId/config', (req, res) => {
-  res.json(db.getGuildConfig(req.params.guildId));
+router.get('/servers/:guildId/config', async (req, res) => {
+  res.json(await db.getGuildConfig(req.params.guildId));
 });
 
-router.post('/servers/:guildId/config', (req, res) => {
-  const updated = db.updateGuildConfig(req.params.guildId, req.body || {});
+router.post('/servers/:guildId/config', async (req, res) => {
+  const updated = await db.updateGuildConfig(req.params.guildId, req.body || {});
   res.json(updated);
 });
 
@@ -91,23 +91,24 @@ router.get('/servers/:guildId/overview', (req, res) => {
 });
 
 // ---- Warnings ----
-router.get('/servers/:guildId/warnings', (req, res) => {
-  res.json(db.getAllWarnings(req.params.guildId));
+router.get('/servers/:guildId/warnings', async (req, res) => {
+  res.json(await db.getAllWarnings(req.params.guildId));
 });
 
-router.delete('/servers/:guildId/warnings/:id', (req, res) => {
-  db.deleteWarning(req.params.guildId, req.params.id);
+router.delete('/servers/:guildId/warnings/:id', async (req, res) => {
+  await db.deleteWarning(req.params.guildId, req.params.id);
   res.json({ ok: true });
 });
 
 // ---- Mod log ----
-router.get('/servers/:guildId/modlog', (req, res) => {
-  res.json(db.getModActions(req.params.guildId, 200));
+router.get('/servers/:guildId/modlog', async (req, res) => {
+  res.json(await db.getModActions(req.params.guildId, 200));
 });
 
 // ---- Moderation actions from dashboard ----
 router.post('/servers/:guildId/moderation/warn', async (req, res) => {
   const { userId, reason } = req.body;
+  if (!isSnowflake(userId)) return res.status(400).json({ error: 'Invalid user ID' });
   try {
     const user = await req.app.locals.discordClient.users.fetch(userId);
     const warning = await performWarn(req.botGuild, user, req.user, reason || 'No reason provided');
@@ -119,6 +120,7 @@ router.post('/servers/:guildId/moderation/warn', async (req, res) => {
 
 router.post('/servers/:guildId/moderation/kick', async (req, res) => {
   const { userId, reason } = req.body;
+  if (!isSnowflake(userId)) return res.status(400).json({ error: 'Invalid user ID' });
   try {
     const member = await req.botGuild.members.fetch(userId);
     await performKick(req.botGuild, member, req.user, reason || 'No reason provided');
@@ -130,6 +132,7 @@ router.post('/servers/:guildId/moderation/kick', async (req, res) => {
 
 router.post('/servers/:guildId/moderation/ban', async (req, res) => {
   const { userId, reason } = req.body;
+  if (!isSnowflake(userId)) return res.status(400).json({ error: 'Invalid user ID' });
   try {
     const user = await req.app.locals.discordClient.users.fetch(userId);
     await performBan(req.botGuild, user, req.user, reason || 'No reason provided');
@@ -141,9 +144,14 @@ router.post('/servers/:guildId/moderation/ban', async (req, res) => {
 
 router.post('/servers/:guildId/moderation/timeout', async (req, res) => {
   const { userId, reason, minutes } = req.body;
+  if (!isSnowflake(userId)) return res.status(400).json({ error: 'Invalid user ID' });
+  const durationMinutes = Number(minutes);
+  if (!Number.isFinite(durationMinutes) || durationMinutes < 1 || durationMinutes > 40320) {
+    return res.status(400).json({ error: 'Invalid duration' });
+  }
   try {
     const member = await req.botGuild.members.fetch(userId);
-    await performTimeout(req.botGuild, member, req.user, Number(minutes) * 60 * 1000, reason || 'No reason provided');
+    await performTimeout(req.botGuild, member, req.user, durationMinutes * 60 * 1000, reason || 'No reason provided');
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -152,9 +160,14 @@ router.post('/servers/:guildId/moderation/timeout', async (req, res) => {
 
 router.post('/servers/:guildId/moderation/tempban', async (req, res) => {
   const { userId, reason, hours } = req.body;
+  if (!isSnowflake(userId)) return res.status(400).json({ error: 'Invalid user ID' });
+  const durationHours = Number(hours);
+  if (!Number.isFinite(durationHours) || durationHours < 1) {
+    return res.status(400).json({ error: 'Invalid duration' });
+  }
   try {
     const user = await req.app.locals.discordClient.users.fetch(userId);
-    await performTempBan(req.botGuild, user, req.user, reason || 'No reason provided', Number(hours) * 3_600_000);
+    await performTempBan(req.botGuild, user, req.user, reason || 'No reason provided', durationHours * 3_600_000);
     res.json({ ok: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -162,38 +175,38 @@ router.post('/servers/:guildId/moderation/tempban', async (req, res) => {
 });
 
 // ---- Reaction roles ----
-router.get('/servers/:guildId/reactionroles', (req, res) => {
-  res.json(db.getReactionRoles(req.params.guildId));
+router.get('/servers/:guildId/reactionroles', async (req, res) => {
+  res.json(await db.getReactionRoles(req.params.guildId));
 });
 
-router.delete('/servers/:guildId/reactionroles/:id', (req, res) => {
-  db.deleteReactionRole(req.params.guildId, req.params.id);
+router.delete('/servers/:guildId/reactionroles/:id', async (req, res) => {
+  await db.deleteReactionRole(req.params.guildId, req.params.id);
   res.json({ ok: true });
 });
 
 // ---- Custom commands ----
-router.get('/servers/:guildId/customcommands', (req, res) => {
-  res.json(db.getCustomCommands(req.params.guildId));
+router.get('/servers/:guildId/customcommands', async (req, res) => {
+  res.json(await db.getCustomCommands(req.params.guildId));
 });
 
-router.post('/servers/:guildId/customcommands', (req, res) => {
+router.post('/servers/:guildId/customcommands', async (req, res) => {
   const { trigger, response } = req.body;
   if (!trigger) return res.status(400).json({ error: 'trigger is required' });
-  const saved = db.upsertCustomCommand(req.params.guildId, trigger, response, null);
+  const saved = await db.upsertCustomCommand(req.params.guildId, trigger, response, null);
   res.json(saved);
 });
 
-router.delete('/servers/:guildId/customcommands/:id', (req, res) => {
-  db.deleteCustomCommand(req.params.guildId, req.params.id);
+router.delete('/servers/:guildId/customcommands/:id', async (req, res) => {
+  await db.deleteCustomCommand(req.params.guildId, req.params.id);
   res.json({ ok: true });
 });
 
 // ---- Saved / custom embeds ----
-router.get('/servers/:guildId/embeds', (req, res) => {
-  res.json(db.getSavedEmbeds(req.params.guildId));
+router.get('/servers/:guildId/embeds', async (req, res) => {
+  res.json(await db.getSavedEmbeds(req.params.guildId));
 });
 
-router.post('/servers/:guildId/embeds', (req, res) => {
+router.post('/servers/:guildId/embeds', async (req, res) => {
   const { name, embed } = req.body;
   if (!name || !embed) return res.status(400).json({ error: 'name and embed are required' });
   try {
@@ -201,12 +214,12 @@ router.post('/servers/:guildId/embeds', (req, res) => {
   } catch (err) {
     return res.status(400).json({ error: `Invalid embed: ${err.message}` });
   }
-  const saved = db.saveEmbed(req.params.guildId, name, JSON.stringify(embed), req.user.id);
+  const saved = await db.saveEmbed(req.params.guildId, name, JSON.stringify(embed), req.user.id);
   res.json(saved);
 });
 
-router.delete('/servers/:guildId/embeds/:id', (req, res) => {
-  db.deleteSavedEmbed(req.params.guildId, req.params.id);
+router.delete('/servers/:guildId/embeds/:id', async (req, res) => {
+  await db.deleteSavedEmbed(req.params.guildId, req.params.id);
   res.json({ ok: true });
 });
 
@@ -224,34 +237,34 @@ router.post('/servers/:guildId/embeds/send', async (req, res) => {
 });
 
 // ---- Leveling ----
-router.get('/servers/:guildId/leaderboard', (req, res) => {
-  res.json(db.getLeaderboard(req.params.guildId, 50));
+router.get('/servers/:guildId/leaderboard', async (req, res) => {
+  res.json(await db.getLeaderboard(req.params.guildId, 50));
 });
 
 // ---- Moderator notes ----
-router.get('/servers/:guildId/notes', (req, res) => {
-  res.json(db.getAllModNotes(req.params.guildId));
+router.get('/servers/:guildId/notes', async (req, res) => {
+  res.json(await db.getAllModNotes(req.params.guildId));
 });
 
-router.get('/servers/:guildId/notes/:userId', (req, res) => {
-  res.json(db.getModNotes(req.params.guildId, req.params.userId));
+router.get('/servers/:guildId/notes/:userId', async (req, res) => {
+  res.json(await db.getModNotes(req.params.guildId, req.params.userId));
 });
 
-router.post('/servers/:guildId/notes', (req, res) => {
+router.post('/servers/:guildId/notes', async (req, res) => {
   const { userId, note } = req.body;
-  if (!userId || !note) return res.status(400).json({ error: 'userId and note are required' });
-  const saved = db.addModNote(req.params.guildId, userId, req.user.id, note);
+  if (!isSnowflake(userId) || !note) return res.status(400).json({ error: 'A valid userId and note are required' });
+  const saved = await db.addModNote(req.params.guildId, userId, req.user.id, note);
   res.json(saved);
 });
 
-router.delete('/servers/:guildId/notes/:id', (req, res) => {
-  db.deleteModNote(req.params.guildId, req.params.id);
+router.delete('/servers/:guildId/notes/:id', async (req, res) => {
+  await db.deleteModNote(req.params.guildId, req.params.id);
   res.json({ ok: true });
 });
 
 // ---- Tickets ----
-router.get('/servers/:guildId/tickets', (req, res) => {
-  res.json(db.getAllTickets(req.params.guildId));
+router.get('/servers/:guildId/tickets', async (req, res) => {
+  res.json(await db.getAllTickets(req.params.guildId));
 });
 
 router.post('/servers/:guildId/tickets/setup', async (req, res) => {
@@ -260,7 +273,6 @@ router.post('/servers/:guildId/tickets/setup', async (req, res) => {
   if (!panelChannel?.isTextBased()) return res.status(400).json({ error: 'Invalid panel channel' });
 
   try {
-    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
     const embed = new EmbedBuilder()
       .setTitle('🎫 Support Tickets')
       .setDescription('Click the button below to open a private ticket with our support team.')
@@ -270,7 +282,7 @@ router.post('/servers/:guildId/tickets/setup', async (req, res) => {
     );
     const panelMessage = await panelChannel.send({ embeds: [embed], components: [row] });
 
-    db.updateGuildConfig(req.params.guildId, {
+    await db.updateGuildConfig(req.params.guildId, {
       ticket_category_id: categoryId,
       ticket_support_role_id: supportRoleId,
       ticket_panel_channel: panelChannelId,
@@ -283,18 +295,18 @@ router.post('/servers/:guildId/tickets/setup', async (req, res) => {
 });
 
 router.post('/servers/:guildId/tickets/:id/close', async (req, res) => {
-  const tickets = db.getAllTickets(req.params.guildId, 500);
+  const tickets = await db.getAllTickets(req.params.guildId, 500);
   const ticket = tickets.find((t) => String(t.id) === req.params.id);
   if (!ticket) return res.status(404).json({ error: 'Ticket not found' });
-  db.closeTicket(req.params.guildId, ticket.channel_id);
+  await db.closeTicket(req.params.guildId, ticket.channel_id);
   const channel = req.botGuild.channels.cache.get(ticket.channel_id);
   if (channel) await channel.delete().catch(() => {});
   res.json({ ok: true });
 });
 
 // ---- Giveaways ----
-router.get('/servers/:guildId/giveaways', (req, res) => {
-  res.json(db.getAllGiveaways(req.params.guildId));
+router.get('/servers/:guildId/giveaways', async (req, res) => {
+  res.json(await db.getAllGiveaways(req.params.guildId));
 });
 
 router.post('/servers/:guildId/giveaways', async (req, res) => {
@@ -310,7 +322,15 @@ router.post('/servers/:guildId/giveaways', async (req, res) => {
       .setFooter({ text: `Hosted by ${req.user.username}` });
     const message = await channel.send({ embeds: [embed] });
     await message.react('🎉');
-    const saved = db.createGiveaway(req.params.guildId, channelId, message.id, prize, winnerCount || 1, req.user.id, endsAt.toISOString().replace('T', ' ').slice(0, 19));
+    const saved = await db.createGiveaway(
+      req.params.guildId,
+      channelId,
+      message.id,
+      prize,
+      winnerCount || 1,
+      req.user.id,
+      endsAt.toISOString().replace('T', ' ').slice(0, 19)
+    );
     res.json(saved);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -318,16 +338,16 @@ router.post('/servers/:guildId/giveaways', async (req, res) => {
 });
 
 // ---- Suggestions ----
-router.get('/servers/:guildId/suggestions', (req, res) => {
-  res.json(db.getSuggestions(req.params.guildId));
+router.get('/servers/:guildId/suggestions', async (req, res) => {
+  res.json(await db.getSuggestions(req.params.guildId));
 });
 
 router.post('/servers/:guildId/suggestions/:id/status', async (req, res) => {
   const { status } = req.body; // 'approved' | 'denied' | 'pending'
   if (!['approved', 'denied', 'pending'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
-  db.setSuggestionStatus(req.params.guildId, req.params.id, status);
+  await db.setSuggestionStatus(req.params.guildId, req.params.id, status);
 
-  const suggestion = db.getSuggestions(req.params.guildId, 1000).find((s) => String(s.id) === req.params.id);
+  const suggestion = await db.getSuggestionById(req.params.guildId, req.params.id);
   if (suggestion) {
     const channel = req.botGuild.channels.cache.get(suggestion.channel_id);
     const message = channel?.isTextBased() ? await channel.messages.fetch(suggestion.message_id).catch(() => null) : null;
@@ -341,9 +361,9 @@ router.post('/servers/:guildId/suggestions/:id/status', async (req, res) => {
 });
 
 // ---- Analytics ----
-router.get('/servers/:guildId/analytics', (req, res) => {
-  const actions = db.getModActions(req.params.guildId, 1000);
-  const warnings = db.getAllWarnings(req.params.guildId);
+router.get('/servers/:guildId/analytics', async (req, res) => {
+  const actions = await db.getModActions(req.params.guildId, 1000);
+  const warnings = await db.getAllWarnings(req.params.guildId);
 
   const byDay = {};
   for (const a of actions) {
@@ -374,7 +394,7 @@ router.get('/servers/:guildId/analytics', (req, res) => {
 
 // ---- Member browser ----
 router.get('/servers/:guildId/members', async (req, res) => {
-  const query = (req.query.q || '').toLowerCase();
+  const query = (req.query.q || '').toString().toLowerCase().slice(0, 100);
 
   if (req.botGuild.members.cache.size < req.botGuild.memberCount && req.botGuild.memberCount < 2000) {
     await req.botGuild.members.fetch().catch(() => {});
@@ -419,16 +439,16 @@ router.get('/servers/:guildId/auditlog', async (req, res) => {
 });
 
 // ---- Config backup / restore ----
-router.get('/servers/:guildId/backup', (req, res) => {
-  const cfg = db.getGuildConfig(req.params.guildId);
+router.get('/servers/:guildId/backup', async (req, res) => {
+  const cfg = await db.getGuildConfig(req.params.guildId);
   const { guild_id, updated_at, ...rest } = cfg;
   res.json({ exportedAt: new Date().toISOString(), guildName: req.botGuild.name, config: rest });
 });
 
-router.post('/servers/:guildId/restore', (req, res) => {
+router.post('/servers/:guildId/restore', async (req, res) => {
   const { config: patch } = req.body;
   if (!patch || typeof patch !== 'object') return res.status(400).json({ error: 'Invalid backup file' });
-  const updated = db.updateGuildConfig(req.params.guildId, patch);
+  const updated = await db.updateGuildConfig(req.params.guildId, patch);
   res.json(updated);
 });
 

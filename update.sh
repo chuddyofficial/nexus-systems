@@ -10,8 +10,8 @@ info() { echo -e "${C_BLUE}==>${C_RESET} $*"; }
 ok()   { echo -e "${C_GREEN}✓${C_RESET} $*"; }
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_USER="modbot"
-SERVICE_NAME="modbot"
+SERVICE_USER="nexus"
+SERVICE_NAME="nexus"
 
 if [[ $EUID -ne 0 ]]; then
   echo "Please run this as root: sudo ./update.sh" >&2
@@ -26,6 +26,7 @@ sudo -u "$SERVICE_USER" git pull --ff-only
 info "Installing dependencies"
 npm install --omit=dev
 chown -R "$SERVICE_USER:$SERVICE_USER" "$APP_DIR"
+[[ -f "$APP_DIR/.env" ]] && chmod 600 "$APP_DIR/.env"
 
 info "Re-registering slash commands (in case any changed)"
 sudo -u "$SERVICE_USER" node src/bot/deploy-commands.js || echo "Slash command registration failed — check .env"

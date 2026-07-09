@@ -11,7 +11,7 @@ function xpForLevel(level) {
 }
 
 async function awardMessageXp(message) {
-  const cfg = db.getGuildConfig(message.guild.id);
+  const cfg = await db.getGuildConfig(message.guild.id);
   if (!cfg.leveling_enabled) return;
 
   const key = `${message.guild.id}:${message.author.id}`;
@@ -20,7 +20,7 @@ async function awardMessageXp(message) {
   lastAward.set(key, now);
 
   const amount = 15 + Math.floor(Math.random() * 11); // 15-25
-  const result = db.addXp(message.guild.id, message.author.id, amount);
+  const result = await db.addXp(message.guild.id, message.author.id, amount);
 
   if (result.leveledUp && cfg.leveling_announce_channel) {
     const channel = message.guild.channels.cache.get(cfg.leveling_announce_channel);

@@ -18,7 +18,7 @@ module.exports = {
     .setDMPermission(false),
 
   async execute(interaction) {
-    const cfg = db.getGuildConfig(interaction.guild.id);
+    const cfg = await db.getGuildConfig(interaction.guild.id);
     if (!cfg.leveling_enabled) {
       return interaction.reply({ content: 'Leveling is not enabled on this server.', flags: MessageFlags.Ephemeral });
     }
@@ -26,7 +26,7 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'leaderboard') {
-      const top = db.getLeaderboard(interaction.guild.id, 10);
+      const top = await db.getLeaderboard(interaction.guild.id, 10);
       if (!top.length) return interaction.reply({ content: 'No XP data yet — start chatting!' });
       const lines = top.map((r, i) => `**${i + 1}.** <@${r.user_id}> — Level ${r.level} (${r.xp} XP)`);
       const embed = new EmbedBuilder().setTitle(`🏆 ${interaction.guild.name} Leaderboard`).setDescription(lines.join('\n')).setColor(config.brandColor);
@@ -34,8 +34,8 @@ module.exports = {
     }
 
     const target = interaction.options.getUser('user') || interaction.user;
-    const level = db.getLevel(interaction.guild.id, target.id);
-    const rank = db.getRank(interaction.guild.id, target.id);
+    const level = await db.getLevel(interaction.guild.id, target.id);
+    const rank = await db.getRank(interaction.guild.id, target.id);
     const currentFloor = xpForLevel(level.level);
     const nextCeil = xpForLevel(level.level + 1);
 

@@ -12,8 +12,8 @@ module.exports = {
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('user', true);
-    const result = db.clearWarnings(interaction.guild.id, targetUser.id);
-    db.logModAction(interaction.guild.id, targetUser.id, interaction.user.id, 'clear_warnings', `Cleared ${result.changes} warning(s)`);
+    const result = await db.clearWarnings(interaction.guild.id, targetUser.id);
+    await db.logModAction(interaction.guild.id, targetUser.id, interaction.user.id, 'clear_warnings', `Cleared ${result.changes} warning(s)`);
     await sendModLog(interaction.guild, {
       action: 'Warnings Cleared',
       target: targetUser,

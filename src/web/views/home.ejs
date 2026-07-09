@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
-<head><%- include('partials/head', { title: 'ModBot — Advanced Discord Moderation' }) %></head>
+<head><%- include('partials/head', { title: 'Nexus Systems — Community Security & Moderation' }) %></head>
 <body>
   <div class="topnav">
-    <div class="brand"><span class="dot"></span> ModBot Dashboard</div>
+    <div class="brand"><span class="dot"></span> Nexus Systems</div>
     <nav>
+      <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">🌙</button>
       <% if (user) { %>
         <a class="btn" href="/servers">My Servers</a>
       <% } else { %>
@@ -14,23 +15,37 @@
   </div>
 
   <div class="hero">
-    <h1>A super-advanced moderation bot,<br />with a full web console.</h1>
-    <p>AutoMod, warnings, mod logs, welcome messages, reaction roles, custom commands, and a live embed builder — all configurable from this dashboard. Currently serving <strong><%= guildCount %></strong> server<%= guildCount === 1 ? '' : 's' %> as <strong><%= botTag %></strong>.</p>
+    <div class="status-pill" style="margin: 0 auto 22px auto;">
+      <span class="dot live"></span> Online — protecting <strong>&nbsp;<%= guildCount %></strong>&nbsp;server<%= guildCount === 1 ? '' : 's' %> right now
+    </div>
+    <h1>Community security &amp; moderation,<br />built to run at scale.</h1>
+    <p>AutoMod, anti-raid, tickets, leveling, giveaways, starboard, and a full moderation suite — every setting configurable from a real web dashboard, not just slash commands. Running as <strong><%= botTag %></strong>.</p>
     <div class="cta">
-      <a class="btn btn-primary" href="<%= inviteUrl %>" target="_blank" rel="noopener">➕ Invite to a server</a>
+      <a class="btn btn-primary" href="<%= inviteUrl %>" target="_blank" rel="noopener">➕ Add to your server</a>
       <a class="btn" href="<%= user ? '/servers' : '/login' %>">🖥️ Open Dashboard</a>
     </div>
   </div>
 
   <div class="feature-grid">
     <div class="feature-card"><div class="icon">🛡️</div><h3>AutoMod</h3><p>Anti-spam, anti-invite, banned words, caps filter, mass-mention protection.</p></div>
-    <div class="feature-card"><div class="icon">🔨</div><h3>Moderation</h3><p>Ban, kick, timeout, warn, purge — from Discord or the dashboard.</p></div>
+    <div class="feature-card"><div class="icon">🚨</div><h3>Anti-Raid</h3><p>Join-burst detection and minimum account age gating to stop raids before they start.</p></div>
+    <div class="feature-card"><div class="icon">🔨</div><h3>Moderation</h3><p>Ban, kick, timeout, temp-ban, warn, notes, purge — from Discord or the dashboard.</p></div>
+    <div class="feature-card"><div class="icon">🎫</div><h3>Support Tickets</h3><p>Button-driven private ticket channels for member support.</p></div>
+    <div class="feature-card"><div class="icon">⭐</div><h3>Leveling</h3><p>XP, levels, and a leaderboard to reward active members.</p></div>
+    <div class="feature-card"><div class="icon">🌟</div><h3>Starboard</h3><p>Highlight the best messages automatically.</p></div>
+    <div class="feature-card"><div class="icon">🎉</div><h3>Giveaways &amp; Polls</h3><p>Run giveaways and polls without leaving Discord.</p></div>
     <div class="feature-card"><div class="icon">💬</div><h3>Custom Embeds</h3><p>Visual embed builder with a live Discord-style preview.</p></div>
     <div class="feature-card"><div class="icon">🎭</div><h3>Reaction Roles</h3><p>Self-assignable roles via emoji reactions.</p></div>
-    <div class="feature-card"><div class="icon">📜</div><h3>Full Logging</h3><p>Mod actions, message edits/deletes, joins &amp; leaves.</p></div>
+    <div class="feature-card"><div class="icon">📜</div><h3>Full Audit Trail</h3><p>Mod actions, message edits/deletes, joins/leaves, and the real Discord audit log.</p></div>
+    <div class="feature-card"><div class="icon">📈</div><h3>Analytics</h3><p>Moderation trends, top moderators, and activity charts per server.</p></div>
     <div class="feature-card"><div class="icon">🖥️</div><h3>Live Console</h3><p>Real-time event stream straight from the bot process.</p></div>
   </div>
 
+  <div style="text-align:center; padding: 20px 24px 70px 24px; color: var(--text-faint); font-size: 13px;">
+    Nexus Systems — every server gets its own independent configuration.
+  </div>
+
   <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
 </body>
 </html>

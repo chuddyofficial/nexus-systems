@@ -35,7 +35,7 @@ function checkSpam(guildId, userId, threshold, intervalMs) {
  */
 async function runAutomod(message) {
   if (!message.guild || message.author.bot) return false;
-  const cfg = db.getGuildConfig(message.guild.id);
+  const cfg = await db.getGuildConfig(message.guild.id);
   if (!cfg.automod_enabled) return false;
   if (cfg.automod_ignored_channels.includes(message.channel.id)) return false;
 

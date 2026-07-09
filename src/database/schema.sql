@@ -1,187 +1,187 @@
 CREATE TABLE IF NOT EXISTS guild_config (
-  guild_id TEXT PRIMARY KEY,
-  mod_log_channel TEXT,
-  message_log_channel TEXT,
-  join_log_channel TEXT,
-  mute_role_id TEXT,
+  guild_id VARCHAR(32) PRIMARY KEY,
+  mod_log_channel VARCHAR(32),
+  message_log_channel VARCHAR(32),
+  join_log_channel VARCHAR(32),
+  mute_role_id VARCHAR(32),
 
-  welcome_enabled INTEGER NOT NULL DEFAULT 0,
-  welcome_channel TEXT,
-  welcome_message TEXT DEFAULT 'Welcome {user} to **{server}**! You are member #{memberCount}.',
-  welcome_embed_color TEXT DEFAULT '#5865F2',
+  welcome_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  welcome_channel VARCHAR(32),
+  welcome_message VARCHAR(1000) DEFAULT 'Welcome {user} to **{server}**! You are member #{memberCount}.',
+  welcome_embed_color VARCHAR(16) DEFAULT '#5865F2',
 
-  leave_enabled INTEGER NOT NULL DEFAULT 0,
-  leave_channel TEXT,
-  leave_message TEXT DEFAULT '{user} has left **{server}**. We now have {memberCount} members.',
+  leave_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  leave_channel VARCHAR(32),
+  leave_message VARCHAR(1000) DEFAULT '{user} has left **{server}**. We now have {memberCount} members.',
 
-  automod_enabled INTEGER NOT NULL DEFAULT 0,
-  automod_anti_invite INTEGER NOT NULL DEFAULT 0,
-  automod_anti_spam INTEGER NOT NULL DEFAULT 0,
-  automod_spam_threshold INTEGER NOT NULL DEFAULT 5,
-  automod_spam_interval INTEGER NOT NULL DEFAULT 5000,
-  automod_anti_mass_mention INTEGER NOT NULL DEFAULT 0,
-  automod_max_mentions INTEGER NOT NULL DEFAULT 5,
-  automod_caps_filter INTEGER NOT NULL DEFAULT 0,
-  automod_caps_percent INTEGER NOT NULL DEFAULT 70,
-  automod_caps_min_len INTEGER NOT NULL DEFAULT 10,
-  automod_banned_words TEXT NOT NULL DEFAULT '[]',
-  automod_ignored_channels TEXT NOT NULL DEFAULT '[]',
-  automod_action TEXT NOT NULL DEFAULT 'delete',
+  automod_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  automod_anti_invite TINYINT(1) NOT NULL DEFAULT 0,
+  automod_anti_spam TINYINT(1) NOT NULL DEFAULT 0,
+  automod_spam_threshold INT NOT NULL DEFAULT 5,
+  automod_spam_interval INT NOT NULL DEFAULT 5000,
+  automod_anti_mass_mention TINYINT(1) NOT NULL DEFAULT 0,
+  automod_max_mentions INT NOT NULL DEFAULT 5,
+  automod_caps_filter TINYINT(1) NOT NULL DEFAULT 0,
+  automod_caps_percent INT NOT NULL DEFAULT 70,
+  automod_caps_min_len INT NOT NULL DEFAULT 10,
+  automod_banned_words TEXT,
+  automod_ignored_channels TEXT,
+  automod_action VARCHAR(32) NOT NULL DEFAULT 'delete',
 
-  prefix TEXT NOT NULL DEFAULT '!',
+  prefix VARCHAR(8) NOT NULL DEFAULT '!',
 
-  autorole_id TEXT,
+  autorole_id VARCHAR(32),
 
-  antiraid_enabled INTEGER NOT NULL DEFAULT 0,
-  antiraid_join_threshold INTEGER NOT NULL DEFAULT 6,
-  antiraid_join_window INTEGER NOT NULL DEFAULT 10000,
-  antiraid_action TEXT NOT NULL DEFAULT 'kick',
-  antiraid_min_account_age_days INTEGER NOT NULL DEFAULT 0,
+  antiraid_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  antiraid_join_threshold INT NOT NULL DEFAULT 6,
+  antiraid_join_window INT NOT NULL DEFAULT 10000,
+  antiraid_action VARCHAR(16) NOT NULL DEFAULT 'kick',
+  antiraid_min_account_age_days INT NOT NULL DEFAULT 0,
 
-  leveling_enabled INTEGER NOT NULL DEFAULT 0,
-  leveling_announce_channel TEXT,
-  leveling_announce_message TEXT DEFAULT 'GG {user}, you just reached **level {level}**!',
+  leveling_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  leveling_announce_channel VARCHAR(32),
+  leveling_announce_message VARCHAR(1000) DEFAULT 'GG {user}, you just reached **level {level}**!',
 
-  starboard_enabled INTEGER NOT NULL DEFAULT 0,
-  starboard_channel TEXT,
-  starboard_emoji TEXT NOT NULL DEFAULT '⭐',
-  starboard_threshold INTEGER NOT NULL DEFAULT 3,
+  starboard_enabled TINYINT(1) NOT NULL DEFAULT 0,
+  starboard_channel VARCHAR(32),
+  starboard_emoji VARCHAR(32) NOT NULL DEFAULT '⭐',
+  starboard_threshold INT NOT NULL DEFAULT 3,
 
-  ticket_category_id TEXT,
-  ticket_support_role_id TEXT,
-  ticket_panel_channel TEXT,
-  ticket_panel_message TEXT,
+  ticket_category_id VARCHAR(32),
+  ticket_support_role_id VARCHAR(32),
+  ticket_panel_channel VARCHAR(32),
+  ticket_panel_message VARCHAR(32),
 
-  suggestions_channel TEXT,
+  suggestions_channel VARCHAR(32),
 
-  updated_at TEXT
-);
+  updated_at DATETIME NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS warnings (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  moderator_id TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(32) NOT NULL,
+  moderator_id VARCHAR(32) NOT NULL,
   reason TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS mod_actions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  moderator_id TEXT NOT NULL,
-  action_type TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(32) NOT NULL,
+  moderator_id VARCHAR(32) NOT NULL,
+  action_type VARCHAR(32) NOT NULL,
   reason TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS reaction_roles (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  channel_id TEXT NOT NULL,
-  message_id TEXT NOT NULL,
-  emoji TEXT NOT NULL,
-  role_id TEXT NOT NULL
-);
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  channel_id VARCHAR(32) NOT NULL,
+  message_id VARCHAR(32) NOT NULL,
+  emoji VARCHAR(64) NOT NULL,
+  role_id VARCHAR(32) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS custom_commands (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  trigger TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  trigger_word VARCHAR(64) NOT NULL,
   response TEXT,
   embed_json TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(guild_id, trigger)
-);
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_guild_trigger (guild_id, trigger_word)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS saved_embeds (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  name TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  name VARCHAR(128) NOT NULL,
   embed_json TEXT NOT NULL,
-  created_by TEXT,
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(guild_id, name)
-);
+  created_by VARCHAR(32),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_guild_name (guild_id, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS levels (
-  guild_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  xp INTEGER NOT NULL DEFAULT 0,
-  level INTEGER NOT NULL DEFAULT 0,
-  last_message_at TEXT,
+  guild_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(32) NOT NULL,
+  xp INT NOT NULL DEFAULT 0,
+  level INT NOT NULL DEFAULT 0,
+  last_message_at DATETIME NULL,
   PRIMARY KEY (guild_id, user_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS starboard_posts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  original_message_id TEXT NOT NULL,
-  starboard_message_id TEXT NOT NULL,
-  star_count INTEGER NOT NULL DEFAULT 0,
-  UNIQUE(guild_id, original_message_id)
-);
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  original_message_id VARCHAR(32) NOT NULL,
+  starboard_message_id VARCHAR(32) NOT NULL,
+  star_count INT NOT NULL DEFAULT 0,
+  UNIQUE KEY uniq_guild_message (guild_id, original_message_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS tickets (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  channel_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'open',
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  closed_at TEXT
-);
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  channel_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(32) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'open',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  closed_at DATETIME NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS giveaways (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  channel_id TEXT NOT NULL,
-  message_id TEXT NOT NULL,
-  prize TEXT NOT NULL,
-  winner_count INTEGER NOT NULL DEFAULT 1,
-  host_id TEXT NOT NULL,
-  ends_at TEXT NOT NULL,
-  ended INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  channel_id VARCHAR(32) NOT NULL,
+  message_id VARCHAR(32) NOT NULL,
+  prize VARCHAR(256) NOT NULL,
+  winner_count INT NOT NULL DEFAULT 1,
+  host_id VARCHAR(32) NOT NULL,
+  ends_at DATETIME NOT NULL,
+  ended TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS suggestions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  channel_id TEXT NOT NULL,
-  message_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  channel_id VARCHAR(32) NOT NULL,
+  message_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(32) NOT NULL,
   content TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'pending',
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS mod_notes (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  user_id TEXT NOT NULL,
-  moderator_id TEXT NOT NULL,
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  user_id VARCHAR(32) NOT NULL,
+  moderator_id VARCHAR(32) NOT NULL,
   note TEXT NOT NULL,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS scheduled_actions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  guild_id TEXT NOT NULL,
-  action_type TEXT NOT NULL,
-  payload TEXT NOT NULL DEFAULT '{}',
-  run_at TEXT NOT NULL,
-  executed INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  action_type VARCHAR(32) NOT NULL,
+  payload TEXT NOT NULL,
+  run_at DATETIME NOT NULL,
+  executed TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX IF NOT EXISTS idx_warnings_guild_user ON warnings(guild_id, user_id);
-CREATE INDEX IF NOT EXISTS idx_modactions_guild ON mod_actions(guild_id);
-CREATE INDEX IF NOT EXISTS idx_reactionroles_message ON reaction_roles(guild_id, message_id);
-CREATE INDEX IF NOT EXISTS idx_levels_guild_xp ON levels(guild_id, xp);
-CREATE INDEX IF NOT EXISTS idx_modnotes_guild_user ON mod_notes(guild_id, user_id);
-CREATE INDEX IF NOT EXISTS idx_scheduled_due ON scheduled_actions(executed, run_at);
-CREATE INDEX IF NOT EXISTS idx_tickets_guild_status ON tickets(guild_id, status);
-CREATE INDEX IF NOT EXISTS idx_giveaways_ended ON giveaways(ended, ends_at);
-CREATE INDEX IF NOT EXISTS idx_suggestions_guild ON suggestions(guild_id, status);
+CREATE INDEX idx_warnings_guild_user ON warnings(guild_id, user_id);
+CREATE INDEX idx_modactions_guild ON mod_actions(guild_id);
+CREATE INDEX idx_reactionroles_message ON reaction_roles(guild_id, message_id);
+CREATE INDEX idx_levels_guild_xp ON levels(guild_id, xp);
+CREATE INDEX idx_modnotes_guild_user ON mod_notes(guild_id, user_id);
+CREATE INDEX idx_scheduled_due ON scheduled_actions(executed, run_at);
+CREATE INDEX idx_tickets_guild_status ON tickets(guild_id, status);
+CREATE INDEX idx_giveaways_ended ON giveaways(ended, ends_at);
+CREATE INDEX idx_suggestions_guild ON suggestions(guild_id, status);

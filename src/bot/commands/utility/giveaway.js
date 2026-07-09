@@ -32,7 +32,7 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'list') {
-      const active = db.getActiveGiveaways(interaction.guild.id);
+      const active = await db.getActiveGiveaways(interaction.guild.id);
       if (!active.length) return interaction.reply({ content: 'No active giveaways.', flags: MessageFlags.Ephemeral });
       const lines = active.map((g) => `**${g.prize}** — ends <t:${Math.floor(new Date(g.ends_at.replace(' ', 'T') + 'Z').getTime() / 1000)}:R> in <#${g.channel_id}>`);
       return interaction.reply({ content: lines.join('\n'), flags: MessageFlags.Ephemeral });
@@ -58,7 +58,7 @@ module.exports = {
     const message = await channel.send({ embeds: [embed] });
     await message.react('🎉');
 
-    db.createGiveaway(interaction.guild.id, channel.id, message.id, prize, winnerCount, interaction.user.id, endsAt.toISOString().replace('T', ' ').slice(0, 19));
+    await db.createGiveaway(interaction.guild.id, channel.id, message.id, prize, winnerCount, interaction.user.id, endsAt.toISOString().replace('T', ' ').slice(0, 19));
 
     await interaction.reply({ content: `🎉 Giveaway started in ${channel}!`, flags: MessageFlags.Ephemeral });
   },

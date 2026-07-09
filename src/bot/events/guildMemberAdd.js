@@ -8,7 +8,7 @@ const config = require('../../config');
 module.exports = {
   name: 'guildMemberAdd',
   async execute(member) {
-    const cfg = db.getGuildConfig(member.guild.id);
+    const cfg = await db.getGuildConfig(member.guild.id);
 
     await sendJoinLog(member.guild, {
       title: 'Member Joined',

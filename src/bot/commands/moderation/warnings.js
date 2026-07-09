@@ -13,7 +13,7 @@ module.exports = {
 
   async execute(interaction) {
     const targetUser = interaction.options.getUser('user', true);
-    const warnings = db.getWarnings(interaction.guild.id, targetUser.id);
+    const warnings = await db.getWarnings(interaction.guild.id, targetUser.id);
 
     if (!warnings.length) {
       return interaction.reply({ content: `${targetUser.tag} has no warnings.`, flags: MessageFlags.Ephemeral });

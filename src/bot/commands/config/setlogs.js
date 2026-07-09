@@ -30,7 +30,7 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
     const channel = interaction.options.getChannel('channel', true);
     const columnMap = { modlog: 'mod_log_channel', messagelog: 'message_log_channel', joinlog: 'join_log_channel' };
-    db.updateGuildConfig(interaction.guild.id, { [columnMap[sub]]: channel.id });
+    await db.updateGuildConfig(interaction.guild.id, { [columnMap[sub]]: channel.id });
     await interaction.reply({ content: `Set ${sub} channel to ${channel}.` });
   },
 };

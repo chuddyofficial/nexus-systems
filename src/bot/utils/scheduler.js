@@ -6,9 +6,9 @@ const config = require('../../config');
 const CHECK_INTERVAL_MS = 20_000;
 
 async function processDueScheduledActions(client) {
-  const due = db.getDueScheduledActions();
+  const due = await db.getDueScheduledActions();
   for (const row of due) {
-    db.markScheduledActionExecuted(row.id);
+    await db.markScheduledActionExecuted(row.id);
     const payload = JSON.parse(row.payload);
     const guild = client.guilds.cache.get(row.guild_id);
     if (!guild) continue;
@@ -16,7 +16,7 @@ async function processDueScheduledActions(client) {
     try {
       if (row.action_type === 'tempban_unban') {
         await guild.members.unban(payload.userId, 'Temp-ban duration expired').catch(() => {});
-        db.logModAction(row.guild_id, payload.userId, client.user.id, 'unban', 'Temp-ban expired');
+        await db.logModAction(row.guild_id, payload.userId, client.user.id, 'unban', 'Temp-ban expired');
         await sendModLog(guild, {
           action: 'Unban (Temp-ban expired)',
           target: { id: payload.userId, tag: payload.userId },
@@ -38,9 +38,9 @@ async function processDueScheduledActions(client) {
 }
 
 async function processDueGiveaways(client) {
-  const due = db.getDueGiveaways();
+  const due = await db.getDueGiveaways();
   for (const row of due) {
-    db.markGiveawayEnded(row.id);
+    await db.markGiveawayEnded(row.id);
     const guild = client.guilds.cache.get(row.guild_id);
     if (!guild) continue;
     const channel = guild.channels.cache.get(row.channel_id);

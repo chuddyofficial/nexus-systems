@@ -2,6 +2,7 @@ const path = require('node:path');
 const http = require('node:http');
 const express = require('express');
 const session = require('express-session');
+const helmet = require('helmet');
 const { Server: SocketServer } = require('socket.io');
 
 const config = require('../config');
@@ -10,6 +11,7 @@ const bus = require('../bot/utils/eventBus');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
+const { apiLimiter, authLimiter } = require('./middleware/rateLimiters');
 
 function createServer(client) {
   const app = express();
@@ -26,8 +28,21 @@ function createServer(client) {
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // Security headers. CSP is intentionally left permissive for inline
+  // scripts/styles — this app has no build step and relies on small inline
+  // <script> blocks (e.g. window.GUILD_ID = ...) throughout the views, so a
+  // strict default-src CSP would break the dashboard. The other headers
+  // (frame-ancestors, nosniff, HSTS, referrer-policy) still apply.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      hsts: config.isProduction,
+    })
+  );
+
+  app.use(express.json({ limit: '256kb' }));
+  app.use(express.urlencoded({ extended: true, limit: '256kb' }));
   app.use(express.static(path.join(__dirname, 'public')));
 
   const sessionMiddleware = session({
@@ -46,8 +61,8 @@ function createServer(client) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  app.use('/auth', authRoutes);
-  app.use('/api', apiRoutes);
+  app.use('/auth', authLimiter, authRoutes);
+  app.use('/api', apiLimiter, apiRoutes);
   app.use('/', dashboardRoutes);
 
   app.use((req, res) => {

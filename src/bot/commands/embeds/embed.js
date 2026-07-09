@@ -29,7 +29,7 @@ module.exports = {
 
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused();
-    const embeds = db.getSavedEmbeds(interaction.guild.id);
+    const embeds = await db.getSavedEmbeds(interaction.guild.id);
     const filtered = embeds.filter((e) => e.name.toLowerCase().includes(focused.toLowerCase())).slice(0, 25);
     await interaction.respond(filtered.map((e) => ({ name: e.name, value: e.name })));
   },
@@ -49,7 +49,8 @@ module.exports = {
       };
     } else {
       const name = interaction.options.getString('name', true);
-      const saved = db.getSavedEmbeds(interaction.guild.id).find((e) => e.name === name);
+      const savedEmbeds = await db.getSavedEmbeds(interaction.guild.id);
+      const saved = savedEmbeds.find((e) => e.name === name);
       if (!saved) {
         return interaction.reply({ content: `No saved embed named "${name}". Create one on the dashboard first.`, flags: MessageFlags.Ephemeral });
       }

@@ -16,13 +16,13 @@ module.exports = {
 
     awardMessageXp(message).catch((err) => console.error('[leveling]', err));
 
-    const cfg = db.getGuildConfig(message.guild.id);
+    const cfg = await db.getGuildConfig(message.guild.id);
     const prefix = cfg.prefix || '!';
     if (!message.content.startsWith(prefix)) return;
     const trigger = message.content.slice(prefix.length).trim().split(/\s+/)[0]?.toLowerCase();
     if (!trigger) return;
 
-    const cmd = db.getCustomCommand(message.guild.id, trigger);
+    const cmd = await db.getCustomCommand(message.guild.id, trigger);
     if (!cmd) return;
 
     const payload = {};

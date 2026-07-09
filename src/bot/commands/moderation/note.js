@@ -24,11 +24,11 @@ module.exports = {
 
     if (sub === 'add') {
       const note = interaction.options.getString('note', true);
-      db.addModNote(interaction.guild.id, targetUser.id, interaction.user.id, note);
+      await db.addModNote(interaction.guild.id, targetUser.id, interaction.user.id, note);
       return interaction.reply({ content: `📝 Note added for **${targetUser.tag}**.`, flags: MessageFlags.Ephemeral });
     }
 
-    const notes = db.getModNotes(interaction.guild.id, targetUser.id);
+    const notes = await db.getModNotes(interaction.guild.id, targetUser.id);
     if (!notes.length) return interaction.reply({ content: `No notes for ${targetUser.tag}.`, flags: MessageFlags.Ephemeral });
 
     const embed = new EmbedBuilder()

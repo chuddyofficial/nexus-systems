@@ -21,7 +21,7 @@ module.exports = {
 
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused();
-    const tags = db.getCustomCommands(interaction.guild.id);
+    const tags = await db.getCustomCommands(interaction.guild.id);
     const filtered = tags.filter((t) => t.trigger.includes(focused.toLowerCase())).slice(0, 25);
     await interaction.respond(filtered.map((t) => ({ name: t.trigger, value: t.trigger })));
   },
@@ -30,7 +30,7 @@ module.exports = {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'list') {
-      const tags = db.getCustomCommands(interaction.guild.id);
+      const tags = await db.getCustomCommands(interaction.guild.id);
       if (!tags.length) return interaction.reply({ content: 'No custom commands yet.', flags: MessageFlags.Ephemeral });
       return interaction.reply({ content: tags.map((t) => `\`!${t.trigger}\``).join(', '), flags: MessageFlags.Ephemeral });
     }
@@ -38,15 +38,15 @@ module.exports = {
     if (sub === 'add') {
       const trigger = interaction.options.getString('trigger', true);
       const response = interaction.options.getString('response', true);
-      db.upsertCustomCommand(interaction.guild.id, trigger, response, null);
+      await db.upsertCustomCommand(interaction.guild.id, trigger, response, null);
       return interaction.reply({ content: `Saved custom command \`!${trigger.toLowerCase()}\`.` });
     }
 
     if (sub === 'remove') {
       const trigger = interaction.options.getString('trigger', true);
-      const cmd = db.getCustomCommand(interaction.guild.id, trigger);
+      const cmd = await db.getCustomCommand(interaction.guild.id, trigger);
       if (!cmd) return interaction.reply({ content: 'No such command.', flags: MessageFlags.Ephemeral });
-      db.deleteCustomCommand(interaction.guild.id, cmd.id);
+      await db.deleteCustomCommand(interaction.guild.id, cmd.id);
       return interaction.reply({ content: `Removed \`!${trigger.toLowerCase()}\`.` });
     }
   },

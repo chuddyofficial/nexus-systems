@@ -8,7 +8,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `modbot-backup-${gid}.json`;
+      a.download = `nexus-backup-${gid}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast('Backup downloaded.');

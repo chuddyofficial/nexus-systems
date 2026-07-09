@@ -4,12 +4,13 @@ const config = require('../../config');
 const { closeCurrentTicket } = require('../utils/tickets');
 
 async function handleTicketOpen(interaction) {
-  const cfg = db.getGuildConfig(interaction.guild.id);
+  const cfg = await db.getGuildConfig(interaction.guild.id);
   if (!cfg.ticket_category_id || !cfg.ticket_support_role_id) {
     return interaction.reply({ content: 'The ticket system is not configured yet.', flags: MessageFlags.Ephemeral });
   }
 
-  const existing = db.getOpenTickets(interaction.guild.id).find((t) => t.user_id === interaction.user.id);
+  const openTickets = await db.getOpenTickets(interaction.guild.id);
+  const existing = openTickets.find((t) => t.user_id === interaction.user.id);
   if (existing) {
     const stillExists = interaction.guild.channels.cache.has(existing.channel_id);
     if (stillExists) {
@@ -18,7 +19,7 @@ async function handleTicketOpen(interaction) {
     // Channel was deleted outside of /ticket close (e.g. manually) — the DB row was
     // never marked closed, which would otherwise permanently block this user from
     // opening a new ticket. Reconcile it here instead.
-    db.closeTicket(interaction.guild.id, existing.channel_id);
+    await db.closeTicket(interaction.guild.id, existing.channel_id);
   }
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -34,7 +35,7 @@ async function handleTicketOpen(interaction) {
     ],
   });
 
-  db.createTicket(interaction.guild.id, channel.id, interaction.user.id);
+  await db.createTicket(interaction.guild.id, channel.id, interaction.user.id);
 
   const embed = new EmbedBuilder()
     .setTitle('🎫 Ticket Opened')

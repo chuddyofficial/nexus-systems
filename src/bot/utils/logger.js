@@ -23,7 +23,7 @@ function label(person) {
 
 async function sendModLog(guild, { action, target, moderator, reason, color = config.brandColor, extra = [] }) {
   pushConsole(guild.id, 'mod', `${action}: ${label(target)} by ${label(moderator)} — ${reason ?? 'no reason'}`);
-  const cfg = db.getGuildConfig(guild.id);
+  const cfg = await db.getGuildConfig(guild.id);
   if (!cfg.mod_log_channel) return;
   const channel = guild.channels.cache.get(cfg.mod_log_channel);
   if (!channel?.isTextBased()) return;
@@ -44,7 +44,7 @@ async function sendModLog(guild, { action, target, moderator, reason, color = co
 
 async function sendMessageLog(guild, { title, description, color = 0xed4245, fields = [] }) {
   pushConsole(guild.id, 'message', `${title}: ${description}`);
-  const cfg = db.getGuildConfig(guild.id);
+  const cfg = await db.getGuildConfig(guild.id);
   if (!cfg.message_log_channel) return;
   const channel = guild.channels.cache.get(cfg.message_log_channel);
   if (!channel?.isTextBased()) return;
@@ -61,7 +61,7 @@ async function sendMessageLog(guild, { title, description, color = 0xed4245, fie
 
 async function sendJoinLog(guild, { title, description, color = 0x57f287 }) {
   pushConsole(guild.id, 'member', `${title}: ${description}`);
-  const cfg = db.getGuildConfig(guild.id);
+  const cfg = await db.getGuildConfig(guild.id);
   if (!cfg.join_log_channel) return;
   const channel = guild.channels.cache.get(cfg.join_log_channel);
   if (!channel?.isTextBased()) return;

@@ -10,7 +10,7 @@ module.exports = {
     .setDMPermission(false),
 
   async execute(interaction) {
-    const cfg = db.getGuildConfig(interaction.guild.id);
+    const cfg = await db.getGuildConfig(interaction.guild.id);
     const channel = cfg.suggestions_channel ? interaction.guild.channels.cache.get(cfg.suggestions_channel) : interaction.channel;
     if (!channel?.isTextBased()) {
       return interaction.reply({ content: 'The suggestions channel is not configured or no longer exists.', flags: MessageFlags.Ephemeral });
@@ -28,7 +28,7 @@ module.exports = {
     await message.react('👍');
     await message.react('👎');
 
-    db.createSuggestion(interaction.guild.id, channel.id, message.id, interaction.user.id, content);
+    await db.createSuggestion(interaction.guild.id, channel.id, message.id, interaction.user.id, content);
 
     await interaction.reply({ content: `Suggestion submitted in ${channel}. Thanks!`, flags: MessageFlags.Ephemeral });
   },

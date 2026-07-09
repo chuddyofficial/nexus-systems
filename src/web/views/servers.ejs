@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
-<head><%- include('partials/head', { title: 'Your Servers — ModBot Dashboard' }) %></head>
+<head><%- include('partials/head', { title: 'Your Servers — Nexus Systems' }) %></head>
 <body>
   <div class="topnav">
-    <div class="brand"><span class="dot"></span> ModBot Dashboard</div>
+    <div class="brand"><span class="dot"></span> Nexus Systems</div>
     <nav>
+      <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">🌙</button>
       <span class="muted" style="font-size:13px;">Logged in as <strong><%= user.username %></strong></span>
       <form action="/auth/logout" method="post" style="display:inline;"><button class="btn btn-sm" type="submit">Logout</button></form>
     </nav>

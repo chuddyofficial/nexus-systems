@@ -5,7 +5,7 @@ const { sendModLog, pushConsole } = require('../utils/logger');
 const recentJoins = new Map();
 
 async function checkAntiRaid(member) {
-  const cfg = db.getGuildConfig(member.guild.id);
+  const cfg = await db.getGuildConfig(member.guild.id);
   if (!cfg.antiraid_enabled) return false;
 
   const accountAgeDays = (Date.now() - member.user.createdTimestamp) / 86_400_000;
@@ -32,10 +32,10 @@ async function actOn(member, action, reason) {
   try {
     if (action === 'ban') {
       await member.ban({ reason });
-      db.logModAction(member.guild.id, member.id, member.client.user.id, 'ban', reason);
+      await db.logModAction(member.guild.id, member.id, member.client.user.id, 'ban', reason);
     } else {
       await member.kick(reason);
-      db.logModAction(member.guild.id, member.id, member.client.user.id, 'kick', reason);
+      await db.logModAction(member.guild.id, member.id, member.client.user.id, 'kick', reason);
     }
     await sendModLog(member.guild, {
       action: `AutoMod Anti-Raid ${action === 'ban' ? 'Ban' : 'Kick'}`,

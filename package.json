@@ -1,7 +1,7 @@
 {
-  "name": "web-bot",
+  "name": "nexus-systems",
   "version": "1.0.0",
-  "description": "Advanced Discord moderation bot with a full local web dashboard (Carl-bot style)",
+  "description": "Nexus Systems - community security & moderation Discord bot with a full web dashboard",
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
@@ -14,7 +14,10 @@
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
     "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "mysql2": "^3.11.4",
     "passport": "^0.7.0",
     "passport-discord": "^0.1.4",
     "socket.io": "^4.8.1"

@@ -18,7 +18,7 @@ module.exports = {
 
     handleStarReaction(reaction, user).catch((err) => console.error('[starboard]', err));
 
-    const rr = db.getReactionRoleByMessage(reaction.message.id, emojiKey(reaction.emoji));
+    const rr = await db.getReactionRoleByMessage(reaction.message.id, emojiKey(reaction.emoji));
     if (!rr) return;
 
     const member = await reaction.message.guild.members.fetch(user.id).catch(() => null);
