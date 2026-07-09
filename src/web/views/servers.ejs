@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('partials/head', { title: 'Your Servers — ModBot Dashboard' }) %></head>
+<body>
+  <div class="topnav">
+    <div class="brand"><span class="dot"></span> ModBot Dashboard</div>
+    <nav>
+      <span class="muted" style="font-size:13px;">Logged in as <strong><%= user.username %></strong></span>
+      <form action="/auth/logout" method="post" style="display:inline;"><button class="btn btn-sm" type="submit">Logout</button></form>
+    </nav>
+  </div>
+
+  <div class="main" style="max-width:1100px;margin:0 auto;">
+    <div class="page-header">
+      <h1>Your Servers</h1>
+      <p>Pick a server to configure. Only servers where you have <strong>Manage Server</strong> permission are shown.</p>
+    </div>
+    <div id="server-grid" class="server-grid"></div>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.INVITE_BASE = <%- JSON.stringify(inviteUrl) %>;</script>
+  <script src="/js/servers.js"></script>
+</body>
+</html>

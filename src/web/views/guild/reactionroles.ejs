@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Reaction Roles' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Reaction Roles</h1>
+        <p>Set up new reaction roles with <span class="mono">/reactionrole add</span> in Discord (point it at a message + emoji + role). Manage existing ones here.</p>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Channel</th><th>Message ID</th><th>Emoji</th><th>Role</th><th></th></tr></thead>
+          <tbody id="rr-body"></tbody>
+        </table>
+        <div id="rr-empty" class="empty-state" style="display:none;">No reaction roles configured.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/reactionroles.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Tickets' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Support Tickets</h1>
+        <p>Post a panel members can click to open a private support channel.</p>
+      </div>
+
+      <div class="card">
+        <h2>Panel Setup</h2>
+        <div class="row">
+          <div class="field"><label>Panel Channel</label><select id="panel_channel"></select></div>
+          <div class="field"><label>Ticket Category</label><select id="category"></select></div>
+          <div class="field"><label>Support Role</label><select id="support_role"></select></div>
+        </div>
+        <button class="btn btn-primary" id="post-panel-btn">🎫 Post Ticket Panel</button>
+      </div>
+
+      <div class="card">
+        <h2>Open Tickets</h2>
+        <table>
+          <thead><tr><th>Channel</th><th>Opened By</th><th>Opened</th><th></th></tr></thead>
+          <tbody id="open-body"></tbody>
+        </table>
+        <div id="open-empty" class="empty-state" style="display:none;">No open tickets.</div>
+      </div>
+
+      <div class="card">
+        <h2>Recent History</h2>
+        <table>
+          <thead><tr><th>Channel</th><th>User</th><th>Status</th><th>Opened</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/tickets.js"></script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Moderation' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Moderation Actions</h1>
+        <p>Take action directly from the dashboard. Every action here is logged the same as slash commands.</p>
+      </div>
+
+      <div class="card">
+        <h2>Target User</h2>
+        <div class="field"><label>User ID</label><input type="text" id="mod-userid" placeholder="e.g. 123456789012345678" /></div>
+        <div class="field"><label>Reason</label><input type="text" id="mod-reason" placeholder="Reason for this action" /></div>
+        <div class="field"><label>Timeout duration (minutes) — used only by the Timeout action</label><input type="number" id="mod-minutes" value="10" min="1" max="40320" /></div>
+        <div class="row">
+          <button class="btn" id="act-warn">⚠️ Warn</button>
+          <button class="btn" id="act-timeout">🔇 Timeout</button>
+          <button class="btn" id="act-kick">👢 Kick</button>
+          <button class="btn btn-danger" id="act-ban">🔨 Ban</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-desc">Tip: right-click a user in Discord (with Developer Mode enabled) and choose "Copy User ID" to get their ID.</p>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/moderation.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — AutoMod' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>AutoMod</h1>
+        <p>Automatically moderate messages in <strong><%= guild.name %></strong>. Members with Manage Messages are exempt.</p>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Enable AutoMod</div>
+            <div class="toggle-desc">Master switch — turn off to disable all filters below.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_enabled" /><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Filters</h2>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Anti-Invite</div>
+            <div class="toggle-desc">Delete messages containing Discord invite links.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_anti_invite" /><span class="slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Anti-Spam</div>
+            <div class="toggle-desc">Delete messages when a user sends too many too quickly.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_anti_spam" /><span class="slider"></span></label>
+        </div>
+        <div class="row" style="margin-top:14px;">
+          <div class="field"><label>Spam threshold (messages)</label><input type="number" id="automod_spam_threshold" min="2" max="50" /></div>
+          <div class="field"><label>Spam interval (ms)</label><input type="number" id="automod_spam_interval" min="1000" max="60000" step="500" /></div>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Anti Mass-Mention</div>
+            <div class="toggle-desc">Delete messages that mention too many users/roles at once.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_anti_mass_mention" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Max mentions allowed</label><input type="number" id="automod_max_mentions" min="1" max="50" /></div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Caps Filter</div>
+            <div class="toggle-desc">Delete messages that are excessively uppercase.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_caps_filter" /><span class="slider"></span></label>
+        </div>
+        <div class="row" style="margin-top:14px;">
+          <div class="field"><label>Caps percentage trigger</label><input type="number" id="automod_caps_percent" min="10" max="100" /></div>
+          <div class="field"><label>Minimum message length</label><input type="number" id="automod_caps_min_len" min="1" max="200" /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Banned Words</h2>
+        <p class="card-desc">Messages containing any of these words (case-insensitive, substring match) will be deleted.</p>
+        <div class="row">
+          <input type="text" id="banned-word-input" placeholder="Add a banned word..." />
+          <button class="btn" id="add-banned-word" style="flex:0 0 auto;">Add</button>
+        </div>
+        <div class="tag-list" id="banned-words-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Ignored Channels</h2>
+        <p class="card-desc">AutoMod will not run in these channels.</p>
+        <div class="row">
+          <select id="ignored-channel-select"></select>
+          <button class="btn" id="add-ignored-channel" style="flex:0 0 auto;">Add</button>
+        </div>
+        <div class="tag-list" id="ignored-channels-list"></div>
+      </div>
+
+      <button class="btn btn-primary" id="save-btn">Save AutoMod Settings</button>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/automod.js"></script>
+</body>
+</html>

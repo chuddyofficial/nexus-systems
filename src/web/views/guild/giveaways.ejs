@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Giveaways' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Giveaways</h1>
+        <p>Members enter by reacting 🎉. Winners are picked automatically when it ends.</p>
+      </div>
+
+      <div class="card">
+        <h2>Start a Giveaway</h2>
+        <div class="row">
+          <div class="field"><label>Channel</label><select id="gw-channel"></select></div>
+          <div class="field"><label>Prize</label><input type="text" id="gw-prize" placeholder="Nitro, a role, etc." /></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>Duration</label><input type="text" id="gw-duration" placeholder="e.g. 30m, 2h, 1d" /></div>
+          <div class="field"><label>Winner Count</label><input type="number" id="gw-winners" value="1" min="1" max="20" /></div>
+        </div>
+        <button class="btn btn-primary" id="gw-start">🎉 Start Giveaway</button>
+      </div>
+
+      <div class="card">
+        <h2>All Giveaways</h2>
+        <table>
+          <thead><tr><th>Prize</th><th>Channel</th><th>Winners</th><th>Status</th><th>Ends</th></tr></thead>
+          <tbody id="gw-body"></tbody>
+        </table>
+        <div id="gw-empty" class="empty-state" style="display:none;">No giveaways yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/giveaways.js"></script>
+</body>
+</html>

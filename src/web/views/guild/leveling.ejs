@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Leveling' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Leveling</h1>
+        <p>Members earn XP for chatting and level up over time. Use <span class="mono">/rank</span> in Discord to check progress.</p>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div><div class="toggle-label">Enable Leveling</div><div class="toggle-desc">Members gain 15-25 XP per message (60s cooldown).</div></div>
+          <label class="switch"><input type="checkbox" id="leveling_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Level-up Announcement Channel</label><select id="leveling_announce_channel"></select></div>
+        <div class="field"><label>Level-up Message</label><input type="text" id="leveling_announce_message" /><div class="field-hint">Placeholders: {user} {level} {server}</div></div>
+        <button class="btn btn-primary" id="save-btn">Save Leveling Settings</button>
+      </div>
+
+      <div class="card">
+        <h2>Leaderboard</h2>
+        <table>
+          <thead><tr><th>#</th><th>User</th><th>Level</th><th>XP</th></tr></thead>
+          <tbody id="lb-body"></tbody>
+        </table>
+        <div id="lb-empty" class="empty-state" style="display:none;">No XP data yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/leveling.js"></script>
+</body>
+</html>

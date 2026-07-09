@@ -1,0 +1,11 @@
+node_modules/
+.env
+data/
+*.sqlite
+*.sqlite3
+sessions.sqlite
+npm-debug.log*
+bot.log
+bot-err.log
+bot.pid.txt
+.claude/

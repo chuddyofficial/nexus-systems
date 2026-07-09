@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Custom Commands' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Custom Commands</h1>
+        <p>Triggered in chat with a <span class="mono">!</span> prefix, e.g. <span class="mono">!rules</span>.</p>
+      </div>
+
+      <div class="card">
+        <h2>Add a Command</h2>
+        <div class="row">
+          <div class="field"><label>Trigger (without !)</label><input type="text" id="cc-trigger" placeholder="rules" /></div>
+        </div>
+        <div class="field"><label>Response</label><textarea id="cc-response" rows="3" placeholder="Read the rules in #rules-and-info!"></textarea></div>
+        <button class="btn btn-primary" id="cc-add">Add Command</button>
+      </div>
+
+      <div class="card">
+        <h2>All Commands</h2>
+        <table>
+          <thead><tr><th>Trigger</th><th>Response</th><th></th></tr></thead>
+          <tbody id="cc-body"></tbody>
+        </table>
+        <div id="cc-empty" class="empty-state" style="display:none;">No custom commands yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/customcommands.js"></script>
+</body>
+</html>

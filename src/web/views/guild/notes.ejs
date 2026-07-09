@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Moderator Notes' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Moderator Notes</h1>
+        <p>Private notes visible only to moderators — never shown to the member.</p>
+      </div>
+
+      <div class="card">
+        <h2>Add a Note</h2>
+        <div class="row">
+          <div class="field"><label>User ID</label><input type="text" id="note-userid" placeholder="123456789012345678" /></div>
+        </div>
+        <div class="field"><label>Note</label><textarea id="note-content" rows="3"></textarea></div>
+        <button class="btn btn-primary" id="note-add">Add Note</button>
+      </div>
+
+      <div class="card">
+        <h2>All Notes</h2>
+        <table>
+          <thead><tr><th>User</th><th>Note</th><th>Moderator</th><th>When</th><th></th></tr></thead>
+          <tbody id="notes-body"></tbody>
+        </table>
+        <div id="notes-empty" class="empty-state" style="display:none;">No notes yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/notes.js"></script>
+</body>
+</html>

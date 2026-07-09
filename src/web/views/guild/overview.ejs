@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Overview' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Overview</h1>
+        <p>General stats and logging configuration for <strong><%= guild.name %></strong>.</p>
+      </div>
+
+      <div class="grid grid-3" id="stat-tiles">
+        <div class="stat-tile"><div class="stat-value" id="stat-members">—</div><div class="stat-label">Members</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-channels">—</div><div class="stat-label">Channels</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-roles">—</div><div class="stat-label">Roles</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Logging Channels</h2>
+        <p class="card-desc">Choose where moderation actions, message edits/deletes, and member join/leave events get posted.</p>
+        <div class="row">
+          <div class="field">
+            <label>Mod Log Channel</label>
+            <select id="mod_log_channel"></select>
+          </div>
+          <div class="field">
+            <label>Message Log Channel</label>
+            <select id="message_log_channel"></select>
+          </div>
+          <div class="field">
+            <label>Join/Leave Log Channel</label>
+            <select id="join_log_channel"></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="save-btn">Save Changes</button>
+      </div>
+
+      <div class="card">
+        <h2>Quick Links</h2>
+        <p class="card-desc">Slash commands available in Discord: <span class="mono">/ban /kick /timeout /warn /purge /lock /unlock /slowmode /embed /reactionrole /tag /dashboard</span></p>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/overview.js"></script>
+</body>
+</html>

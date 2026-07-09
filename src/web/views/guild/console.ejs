@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Live Console' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main" style="max-width:1300px;">
+      <div class="page-header">
+        <h1>Live Console</h1>
+        <p>Real-time stream of bot activity for <strong><%= guild.name %></strong> — automod actions, moderation actions, message edits/deletes, member joins/leaves.</p>
+      </div>
+      <div class="console-status"><span class="dot" id="conn-dot"></span> <span id="conn-text">Connecting...</span></div>
+      <div class="console-box" id="console-box"></div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/console.js"></script>
+</body>
+</html>

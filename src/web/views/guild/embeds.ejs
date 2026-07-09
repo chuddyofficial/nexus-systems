@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Custom Embeds' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main" style="max-width:1300px;">
+      <div class="page-header">
+        <h1>Custom Embed Builder</h1>
+        <p>Build a rich embed with a live preview, save it for reuse with <span class="mono">/embed saved</span>, or send it immediately.</p>
+      </div>
+
+      <div class="embed-builder">
+        <div>
+          <div class="card">
+            <h2>Content</h2>
+            <div class="field"><label>Plain text (sent above the embed)</label><input type="text" id="f-content" /></div>
+            <div class="field"><label>Title</label><input type="text" id="f-title" /></div>
+            <div class="field"><label>Description</label><textarea id="f-description" rows="4"></textarea></div>
+            <div class="row">
+              <div class="field"><label>Color</label><input type="color" id="f-color" value="#5865f2" style="height:42px;" /></div>
+              <div class="field"><label>URL (title link)</label><input type="text" id="f-url" placeholder="https://..." /></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Author</h2>
+            <div class="row">
+              <div class="field"><label>Name</label><input type="text" id="f-author-name" /></div>
+              <div class="field"><label>Icon URL</label><input type="text" id="f-author-icon" /></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Images</h2>
+            <div class="row">
+              <div class="field"><label>Thumbnail URL</label><input type="text" id="f-thumbnail" /></div>
+              <div class="field"><label>Image URL</label><input type="text" id="f-image" /></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Footer</h2>
+            <div class="row">
+              <div class="field"><label>Footer Text</label><input type="text" id="f-footer-text" /></div>
+              <div class="field"><label>Footer Icon URL</label><input type="text" id="f-footer-icon" /></div>
+            </div>
+            <div class="toggle-row" style="border:none;padding-top:0;">
+              <div class="toggle-label" style="font-size:13px;">Show current timestamp</div>
+              <label class="switch"><input type="checkbox" id="f-timestamp" /><span class="slider"></span></label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Fields</h2>
+            <div id="fields-list"></div>
+            <button class="btn btn-sm" id="add-field">+ Add Field</button>
+          </div>
+
+          <div class="card">
+            <h2>Send / Save</h2>
+            <div class="row">
+              <div class="field"><label>Channel</label><select id="f-channel"></select></div>
+              <div class="field"><label>Save as (name)</label><input type="text" id="f-save-name" placeholder="e.g. rules-embed" /></div>
+            </div>
+            <div class="row">
+              <button class="btn btn-primary" id="btn-send">🚀 Send to Channel</button>
+              <button class="btn" id="btn-save">💾 Save Embed</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="discord-preview">
+          <div style="font-size:12px;color:#949ba4;margin-bottom:8px;">PREVIEW</div>
+          <div id="preview-content" style="margin-bottom:6px;white-space:pre-wrap;"></div>
+          <div class="preview-embed" id="preview-embed">
+            <div class="preview-author" id="preview-author" style="display:none;"></div>
+            <div class="preview-title" id="preview-title" style="display:none;"></div>
+            <div class="preview-desc" id="preview-desc"></div>
+            <div class="preview-fields" id="preview-fields"></div>
+            <img class="preview-image" id="preview-image" style="display:none;" />
+            <div class="preview-footer" id="preview-footer" style="display:none;"></div>
+          </div>
+          <img class="preview-thumb" id="preview-thumb" style="display:none;" />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Saved Embeds</h2>
+        <p class="card-desc">Send any saved embed later in Discord with <span class="mono">/embed saved name:&lt;name&gt;</span>, or manage them here.</p>
+        <div class="saved-embed-list" id="saved-list"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/embeds.js"></script>
+</body>
+</html>

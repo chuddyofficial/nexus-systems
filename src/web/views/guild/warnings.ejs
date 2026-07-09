@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Warnings' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Warnings</h1>
+        <p>All warnings issued in <strong><%= guild.name %></strong>.</p>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>ID</th><th>User</th><th>Moderator</th><th>Reason</th><th>When</th><th></th></tr></thead>
+          <tbody id="warnings-body"></tbody>
+        </table>
+        <div id="warnings-empty" class="empty-state" style="display:none;">No warnings yet.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/warnings.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Anti-Raid & Auto-Role' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Anti-Raid &amp; Auto-Role</h1>
+        <p>Protect against join raids and automatically assign a role to new members.</p>
+      </div>
+
+      <div class="card">
+        <h2>Auto-Role</h2>
+        <p class="card-desc">Automatically give this role to every member who joins.</p>
+        <div class="field"><label>Auto-Role</label><select id="autorole_id"></select></div>
+        <button class="btn btn-primary" id="save-autorole">Save Auto-Role</button>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div><div class="toggle-label">Enable Anti-Raid</div><div class="toggle-desc">Detect and act on suspicious rapid-join bursts and very new accounts.</div></div>
+          <label class="switch"><input type="checkbox" id="antiraid_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="row" style="margin-top:14px;">
+          <div class="field"><label>Join threshold (joins)</label><input type="number" id="antiraid_join_threshold" min="2" max="50" /></div>
+          <div class="field"><label>Time window (ms)</label><input type="number" id="antiraid_join_window" min="1000" max="120000" step="1000" /></div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Action</label>
+            <select id="antiraid_action">
+              <option value="kick">Kick</option>
+              <option value="ban">Ban</option>
+            </select>
+          </div>
+          <div class="field"><label>Minimum account age (days, 0 = off)</label><input type="number" id="antiraid_min_account_age_days" min="0" max="60" /></div>
+        </div>
+        <button class="btn btn-primary" id="save-antiraid">Save Anti-Raid Settings</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/antiraid.js"></script>
+</body>
+</html>

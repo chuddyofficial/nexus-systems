@@ -1,0 +1,48 @@
+<aside class="sidebar">
+  <div class="guild-name">
+    <% if (guild.iconURL && guild.iconURL()) { %>
+      <img src="<%= guild.iconURL() %>" alt="" />
+    <% } else { %>
+      <div class="icon-fallback" style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:13px;"><%= guild.name.slice(0,2).toUpperCase() %></div>
+    <% } %>
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= guild.name %></span>
+  </div>
+
+  <div class="sidebar-tools">
+    <button class="icon-btn" id="palette-trigger-btn" title="Quick jump (Ctrl+K)">⌘K</button>
+    <button class="icon-btn" id="theme-toggle-btn" title="Toggle theme">🌙</button>
+  </div>
+
+  <div class="nav-section">General</div>
+  <a class="navlink <%= page === 'overview' ? 'active' : '' %>" href="/servers/<%= guildId %>">📊 Overview</a>
+  <a class="navlink <%= page === 'analytics' ? 'active' : '' %>" href="/servers/<%= guildId %>/analytics">📈 Analytics</a>
+  <a class="navlink <%= page === 'members' ? 'active' : '' %>" href="/servers/<%= guildId %>/members">👥 Members</a>
+  <a class="navlink <%= page === 'console' ? 'active' : '' %>" href="/servers/<%= guildId %>/console">🖥️ Live Console</a>
+
+  <div class="nav-section">Moderation</div>
+  <a class="navlink <%= page === 'moderation' ? 'active' : '' %>" href="/servers/<%= guildId %>/moderation">🔨 Moderation</a>
+  <a class="navlink <%= page === 'automod' ? 'active' : '' %>" href="/servers/<%= guildId %>/automod">🛡️ AutoMod</a>
+  <a class="navlink <%= page === 'antiraid' ? 'active' : '' %>" href="/servers/<%= guildId %>/antiraid">🚨 Anti-Raid &amp; Auto-Role</a>
+  <a class="navlink <%= page === 'warnings' ? 'active' : '' %>" href="/servers/<%= guildId %>/warnings">⚠️ Warnings</a>
+  <a class="navlink <%= page === 'notes' ? 'active' : '' %>" href="/servers/<%= guildId %>/notes">🗒️ Moderator Notes</a>
+  <a class="navlink <%= page === 'modlog' ? 'active' : '' %>" href="/servers/<%= guildId %>/modlog">📜 Mod Log</a>
+  <a class="navlink <%= page === 'auditlog' ? 'active' : '' %>" href="/servers/<%= guildId %>/auditlog">🕵️ Audit Log</a>
+
+  <div class="nav-section">Engagement</div>
+  <a class="navlink <%= page === 'leveling' ? 'active' : '' %>" href="/servers/<%= guildId %>/leveling">⭐ Leveling</a>
+  <a class="navlink <%= page === 'starboard' ? 'active' : '' %>" href="/servers/<%= guildId %>/starboard">🌟 Starboard</a>
+  <a class="navlink <%= page === 'tickets' ? 'active' : '' %>" href="/servers/<%= guildId %>/tickets">🎫 Tickets</a>
+  <a class="navlink <%= page === 'giveaways' ? 'active' : '' %>" href="/servers/<%= guildId %>/giveaways">🎉 Giveaways</a>
+  <a class="navlink <%= page === 'suggestions' ? 'active' : '' %>" href="/servers/<%= guildId %>/suggestions">💡 Suggestions</a>
+  <a class="navlink <%= page === 'reactionroles' ? 'active' : '' %>" href="/servers/<%= guildId %>/reactionroles">🎭 Reaction Roles</a>
+
+  <div class="nav-section">Content</div>
+  <a class="navlink <%= page === 'welcome' ? 'active' : '' %>" href="/servers/<%= guildId %>/welcome">👋 Welcome / Leave</a>
+  <a class="navlink <%= page === 'embeds' ? 'active' : '' %>" href="/servers/<%= guildId %>/embeds">💬 Custom Embeds</a>
+  <a class="navlink <%= page === 'customcommands' ? 'active' : '' %>" href="/servers/<%= guildId %>/customcommands">⚡ Custom Commands</a>
+
+  <div class="nav-section">Server</div>
+  <a class="navlink <%= page === 'backup' ? 'active' : '' %>" href="/servers/<%= guildId %>/backup">💾 Backup &amp; Restore</a>
+
+  <a class="back-link" href="/servers">← All servers</a>
+</aside>

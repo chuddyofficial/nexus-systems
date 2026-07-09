@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Audit Log' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Discord Audit Log</h1>
+        <p>The most recent 50 entries straight from Discord's own audit log for this server.</p>
+      </div>
+      <div class="card">
+        <table>
+          <thead><tr><th>Action</th><th>Executor</th><th>Target</th><th>Reason</th><th>When</th></tr></thead>
+          <tbody id="al-body"></tbody>
+        </table>
+        <div id="al-empty" class="empty-state" style="display:none;">No audit log entries found.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/auditlog.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Welcome / Leave' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Welcome / Leave Messages</h1>
+        <p>Placeholders: <span class="mono">{user} {username} {server} {memberCount}</span></p>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div><div class="toggle-label">Enable Welcome Messages</div><div class="toggle-desc">Post a message when someone joins.</div></div>
+          <label class="switch"><input type="checkbox" id="welcome_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Welcome Channel</label><select id="welcome_channel"></select></div>
+        <div class="field"><label>Welcome Message</label><textarea id="welcome_message"></textarea></div>
+        <div class="field"><label>Embed Color</label><input type="color" id="welcome_embed_color" style="height:42px;" /></div>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div><div class="toggle-label">Enable Leave Messages</div><div class="toggle-desc">Post a message when someone leaves.</div></div>
+          <label class="switch"><input type="checkbox" id="leave_enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Leave Channel</label><select id="leave_channel"></select></div>
+        <div class="field"><label>Leave Message</label><textarea id="leave_message"></textarea></div>
+      </div>
+
+      <button class="btn btn-primary" id="save-btn">Save Changes</button>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/welcome.js"></script>
+</body>
+</html>

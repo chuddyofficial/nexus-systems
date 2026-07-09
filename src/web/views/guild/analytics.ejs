@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Analytics' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Analytics</h1>
+        <p>Moderation activity trends for <strong><%= guild.name %></strong>.</p>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="stat-tile"><div class="stat-value" id="stat-total-actions">—</div><div class="stat-label">Total Mod Actions</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-total-warnings">—</div><div class="stat-label">Total Warnings</div></div>
+        <div class="stat-tile"><div class="stat-value" id="stat-active-mods">—</div><div class="stat-label">Active Moderators</div></div>
+      </div>
+
+      <div class="card">
+        <h2>Moderation Actions (last 30 active days)</h2>
+        <div id="daily-chart"></div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>By Action Type</h2>
+          <div class="tag-list" id="type-badges"></div>
+        </div>
+        <div class="card">
+          <h2>Top Moderators</h2>
+          <table>
+            <thead><tr><th>Moderator</th><th>Actions</th></tr></thead>
+            <tbody id="mod-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/analytics.js"></script>
+</body>
+</html>
