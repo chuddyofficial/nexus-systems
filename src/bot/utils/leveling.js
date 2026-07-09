@@ -42,6 +42,16 @@ async function awardMessageXp(message) {
       })
       .catch(() => {});
   }
+
+  if (result.leveledUp) {
+    const levelRoles = await db.getLevelRoles(message.guild.id);
+    const earned = levelRoles.filter((r) => r.level <= result.level);
+    const member = message.member;
+    if (member && earned.length) {
+      const roleIds = earned.map((r) => r.role_id).filter((id) => message.guild.roles.cache.has(id));
+      await member.roles.add(roleIds).catch(() => {});
+    }
+  }
 }
 
 module.exports = { awardMessageXp, xpForLevel };

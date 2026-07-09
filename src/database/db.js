@@ -36,13 +36,15 @@ const CONFIG_COLUMNS = [
   'leveling_enabled', 'leveling_announce_channel', 'leveling_announce_message',
   'starboard_enabled', 'starboard_channel', 'starboard_emoji', 'starboard_threshold',
   'ticket_category_id', 'ticket_support_role_id', 'ticket_panel_channel', 'ticket_panel_message',
+  'ticket_transcript_channel', 'ticket_auto_close_hours',
   'suggestions_channel',
+  'verify_enabled', 'verify_role_id', 'verify_channel_id', 'verify_message', 'verify_panel_message',
 ];
 
 const BOOLEAN_COLUMNS = new Set([
   'welcome_enabled', 'leave_enabled', 'automod_enabled', 'automod_anti_invite',
   'automod_anti_spam', 'automod_anti_mass_mention', 'automod_caps_filter',
-  'antiraid_enabled', 'leveling_enabled', 'starboard_enabled',
+  'antiraid_enabled', 'leveling_enabled', 'starboard_enabled', 'verify_enabled',
 ]);
 
 const JSON_COLUMNS = new Set(['automod_banned_words', 'automod_ignored_channels']);
@@ -298,12 +300,11 @@ async function upsertStarboardPost(guildId, originalMessageId, starboardMessageI
 }
 
 // Tickets
-async function createTicket(guildId, channelId, userId) {
-  const [result] = await pool.execute('INSERT INTO tickets (guild_id, channel_id, user_id) VALUES (?, ?, ?)', [
-    guildId,
-    channelId,
-    userId,
-  ]);
+async function createTicket(guildId, channelId, userId, category) {
+  const [result] = await pool.execute(
+    'INSERT INTO tickets (guild_id, channel_id, user_id, category, last_activity_at) VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
+    [guildId, channelId, userId, category || null]
+  );
   const [rows] = await pool.execute('SELECT * FROM tickets WHERE id = ?', [result.insertId]);
   return rows[0];
 }
@@ -314,6 +315,38 @@ async function closeTicket(guildId, channelId) {
     [guildId, channelId]
   );
   return { changes: result.affectedRows };
+}
+
+async function claimTicket(guildId, channelId, moderatorId) {
+  await pool.execute('UPDATE tickets SET claimed_by = ? WHERE guild_id = ? AND channel_id = ?', [
+    moderatorId,
+    guildId,
+    channelId,
+  ]);
+}
+
+async function touchTicketActivity(channelId) {
+  await pool.execute('UPDATE tickets SET last_activity_at = UTC_TIMESTAMP() WHERE channel_id = ? AND status = \'open\'', [
+    channelId,
+  ]);
+}
+
+async function getTicketByChannel(channelId) {
+  const [rows] = await pool.execute('SELECT * FROM tickets WHERE channel_id = ?', [channelId]);
+  return rows[0];
+}
+
+// Single joined query (rather than one round-trip per guild) so this stays
+// cheap regardless of how many servers the bot is in.
+async function getAllStaleTickets() {
+  const [rows] = await pool.query(`
+    SELECT t.* FROM tickets t
+    JOIN guild_config g ON g.guild_id = t.guild_id
+    WHERE t.status = 'open'
+      AND g.ticket_auto_close_hours > 0
+      AND t.last_activity_at <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL g.ticket_auto_close_hours HOUR)
+  `);
+  return rows;
 }
 
 async function getOpenTickets(guildId) {
@@ -452,9 +485,139 @@ async function getPendingScheduledActions(guildId, actionType) {
   return rows;
 }
 
+// Disabled commands (per-server command toggles)
+async function isCommandDisabled(guildId, commandName) {
+  const [rows] = await pool.execute('SELECT 1 FROM disabled_commands WHERE guild_id = ? AND command_name = ?', [
+    guildId,
+    commandName,
+  ]);
+  return rows.length > 0;
+}
+
+async function getDisabledCommands(guildId) {
+  const [rows] = await pool.execute('SELECT command_name FROM disabled_commands WHERE guild_id = ?', [guildId]);
+  return rows.map((r) => r.command_name);
+}
+
+async function disableCommand(guildId, commandName, disabledBy) {
+  await pool.execute(
+    'INSERT INTO disabled_commands (guild_id, command_name, disabled_by) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE disabled_by = VALUES(disabled_by)',
+    [guildId, commandName, disabledBy || null]
+  );
+}
+
+async function enableCommand(guildId, commandName) {
+  await pool.execute('DELETE FROM disabled_commands WHERE guild_id = ? AND command_name = ?', [guildId, commandName]);
+}
+
+// Teams / permissions (RBAC)
+const ALL_TEAM_PERMISSIONS = [
+  'manage_config',
+  'manage_automod',
+  'manage_antiraid',
+  'manage_moderation',
+  'manage_tickets',
+  'manage_embeds',
+  'manage_giveaways',
+  'manage_suggestions',
+  'manage_reactionroles',
+  'manage_customcommands',
+  'manage_commands',
+  'view_dashboard',
+];
+
+function normalizeTeam(row) {
+  if (!row) return row;
+  return { ...row, permissions: safeJsonParse(row.permissions, []) };
+}
+
+async function createTeam(guildId, name, color = '#5865F2') {
+  const [result] = await pool.execute('INSERT INTO teams (guild_id, name, color) VALUES (?, ?, ?)', [guildId, name, color]);
+  const [rows] = await pool.execute('SELECT * FROM teams WHERE id = ?', [result.insertId]);
+  return normalizeTeam(rows[0]);
+}
+
+async function getTeams(guildId) {
+  const [rows] = await pool.execute('SELECT * FROM teams WHERE guild_id = ? ORDER BY created_at ASC', [guildId]);
+  return rows.map(normalizeTeam);
+}
+
+async function getTeam(guildId, teamId) {
+  const [rows] = await pool.execute('SELECT * FROM teams WHERE guild_id = ? AND id = ?', [guildId, teamId]);
+  return normalizeTeam(rows[0]);
+}
+
+async function deleteTeam(guildId, teamId) {
+  await pool.execute('DELETE FROM team_members WHERE guild_id = ? AND team_id = ?', [guildId, teamId]);
+  await pool.execute('DELETE FROM teams WHERE guild_id = ? AND id = ?', [guildId, teamId]);
+}
+
+async function updateTeamPermissions(guildId, teamId, permissions) {
+  const filtered = permissions.filter((p) => ALL_TEAM_PERMISSIONS.includes(p));
+  await pool.execute('UPDATE teams SET permissions = ? WHERE guild_id = ? AND id = ?', [
+    JSON.stringify(filtered),
+    guildId,
+    teamId,
+  ]);
+  return getTeam(guildId, teamId);
+}
+
+async function addTeamMember(guildId, teamId, discordId, memberType = 'user', addedBy) {
+  await pool.execute(
+    'INSERT IGNORE INTO team_members (team_id, guild_id, member_type, discord_id, added_by) VALUES (?, ?, ?, ?, ?)',
+    [teamId, guildId, memberType, discordId, addedBy || null]
+  );
+}
+
+async function removeTeamMember(guildId, teamId, discordId) {
+  await pool.execute('DELETE FROM team_members WHERE guild_id = ? AND team_id = ? AND discord_id = ?', [
+    guildId,
+    teamId,
+    discordId,
+  ]);
+}
+
+async function getTeamMembers(guildId, teamId) {
+  const [rows] = await pool.execute('SELECT * FROM team_members WHERE guild_id = ? AND team_id = ?', [guildId, teamId]);
+  return rows;
+}
+
+// Resolves every team a Discord user belongs to in a guild, either by direct
+// user-ID membership or via one of the caller's Discord role IDs.
+async function getTeamsForMember(guildId, userId, roleIds = []) {
+  const teams = await getTeams(guildId);
+  if (!teams.length) return [];
+
+  const placeholders = [userId, ...roleIds].map(() => '?').join(',');
+  const [memberRows] = await pool.query(
+    `SELECT DISTINCT team_id FROM team_members WHERE guild_id = ? AND discord_id IN (${placeholders})`,
+    [guildId, userId, ...roleIds]
+  );
+  const memberTeamIds = new Set(memberRows.map((r) => r.team_id));
+  return teams.filter((t) => memberTeamIds.has(t.id));
+}
+
+// Level roles (leveling reward roles)
+async function addLevelRole(guildId, level, roleId) {
+  await pool.execute(
+    'INSERT INTO level_roles (guild_id, level, role_id) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE role_id = VALUES(role_id)',
+    [guildId, level, roleId]
+  );
+}
+
+async function getLevelRoles(guildId) {
+  const [rows] = await pool.execute('SELECT * FROM level_roles WHERE guild_id = ? ORDER BY level ASC', [guildId]);
+  return rows;
+}
+
+async function deleteLevelRole(guildId, id) {
+  await pool.execute('DELETE FROM level_roles WHERE guild_id = ? AND id = ?', [guildId, id]);
+}
+
 module.exports = {
   pool,
   initDb,
+  ALL_TEAM_PERMISSIONS,
   getGuildConfig,
   updateGuildConfig,
   addWarning,
@@ -483,6 +646,10 @@ module.exports = {
   upsertStarboardPost,
   createTicket,
   closeTicket,
+  claimTicket,
+  touchTicketActivity,
+  getTicketByChannel,
+  getAllStaleTickets,
   getOpenTickets,
   getAllTickets,
   createGiveaway,
@@ -502,4 +669,20 @@ module.exports = {
   getDueScheduledActions,
   markScheduledActionExecuted,
   getPendingScheduledActions,
+  isCommandDisabled,
+  getDisabledCommands,
+  disableCommand,
+  enableCommand,
+  createTeam,
+  getTeams,
+  getTeam,
+  deleteTeam,
+  updateTeamPermissions,
+  addTeamMember,
+  removeTeamMember,
+  getTeamMembers,
+  getTeamsForMember,
+  addLevelRole,
+  getLevelRoles,
+  deleteLevelRole,
 };

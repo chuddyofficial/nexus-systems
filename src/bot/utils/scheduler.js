@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const db = require('../../database/db');
 const { sendModLog, pushConsole } = require('./logger');
-const config = require('../../config');
+const { processDueGiveaways } = require('./giveaways');
 
 const CHECK_INTERVAL_MS = 20_000;
 
@@ -37,52 +37,32 @@ async function processDueScheduledActions(client) {
   }
 }
 
-async function processDueGiveaways(client) {
-  const due = await db.getDueGiveaways();
-  for (const row of due) {
-    await db.markGiveawayEnded(row.id);
-    const guild = client.guilds.cache.get(row.guild_id);
-    if (!guild) continue;
-    const channel = guild.channels.cache.get(row.channel_id);
-    if (!channel?.isTextBased()) continue;
-
-    try {
-      const message = await channel.messages.fetch(row.message_id);
-      const reaction = message.reactions.cache.get('🎉');
-      const users = reaction ? (await reaction.users.fetch()).filter((u) => !u.bot) : new Map();
-      const pool = [...users.values()];
-      const winners = [];
-      for (let i = 0; i < row.winner_count && pool.length; i++) {
-        const idx = Math.floor(Math.random() * pool.length);
-        winners.push(pool.splice(idx, 1)[0]);
-      }
-
-      const resultEmbed = new EmbedBuilder()
-        .setTitle('🎉 Giveaway Ended')
-        .setDescription(
-          winners.length
-            ? `**Prize:** ${row.prize}\n**Winner(s):** ${winners.map((w) => `<@${w.id}>`).join(', ')}`
-            : `**Prize:** ${row.prize}\nNo valid entries — no winner could be chosen.`
-        )
-        .setColor(config.brandColor)
-        .setTimestamp(new Date());
-
-      await message.edit({ embeds: [resultEmbed] }).catch(() => {});
-      await channel.send({
-        content: winners.length ? `🎉 Congratulations ${winners.map((w) => `<@${w.id}>`).join(', ')}! You won **${row.prize}**!` : `No winner could be determined for **${row.prize}**.`,
-      });
-    } catch (err) {
-      pushConsole(row.guild_id, 'system', `Giveaway ${row.id} failed to resolve: ${err.message}`);
-    }
-  }
-}
-
 function startScheduler(client) {
   setInterval(() => {
     processDueScheduledActions(client).catch((err) => console.error('[scheduler]', err));
     processDueGiveaways(client).catch((err) => console.error('[scheduler]', err));
+    processStaleTickets(client).catch((err) => console.error('[scheduler]', err));
   }, CHECK_INTERVAL_MS);
   console.log('[scheduler] Started (interval ' + CHECK_INTERVAL_MS + 'ms)');
+}
+
+async function processStaleTickets(client) {
+  const stale = await db.getAllStaleTickets();
+  for (const ticket of stale) {
+    const guild = client.guilds.cache.get(ticket.guild_id);
+    if (!guild) continue;
+    try {
+      await db.closeTicket(ticket.guild_id, ticket.channel_id);
+      const channel = guild.channels.cache.get(ticket.channel_id);
+      if (channel) {
+        await channel.send('🔒 This ticket was automatically closed due to inactivity.').catch(() => {});
+        setTimeout(() => channel.delete().catch(() => {}), 10_000);
+      }
+      pushConsole(ticket.guild_id, 'system', `Auto-closed inactive ticket #${ticket.id}`);
+    } catch (err) {
+      pushConsole(ticket.guild_id, 'system', `Failed to auto-close ticket #${ticket.id}: ${err.message}`);
+    }
+  }
 }
 
 module.exports = { startScheduler };

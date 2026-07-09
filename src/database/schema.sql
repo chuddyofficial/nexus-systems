@@ -176,6 +176,59 @@ CREATE TABLE IF NOT EXISTS scheduled_actions (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS disabled_commands (
+  guild_id VARCHAR(32) NOT NULL,
+  command_name VARCHAR(64) NOT NULL,
+  disabled_by VARCHAR(32),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (guild_id, command_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS teams (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  color VARCHAR(16) NOT NULL DEFAULT '#5865F2',
+  permissions TEXT NOT NULL DEFAULT '[]',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_guild_team_name (guild_id, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS team_members (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  team_id INT NOT NULL,
+  guild_id VARCHAR(32) NOT NULL,
+  member_type VARCHAR(8) NOT NULL DEFAULT 'user',
+  discord_id VARCHAR(32) NOT NULL,
+  added_by VARCHAR(32),
+  added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_team_member (team_id, discord_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS level_roles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32) NOT NULL,
+  level INT NOT NULL,
+  role_id VARCHAR(32) NOT NULL,
+  UNIQUE KEY uniq_guild_level (guild_id, level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Columns added after the initial release. Using idempotent ALTERs (rather
+-- than folding them into the CREATE TABLE statements above) means this file
+-- stays safe to re-run against both brand-new and already-provisioned
+-- databases — new installs and upgrades converge on the same schema.
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_enabled TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_role_id VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_channel_id VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_message VARCHAR(1000) DEFAULT 'Click the button below to verify yourself and gain access to the rest of the server.';
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_panel_message VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS ticket_transcript_channel VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS ticket_auto_close_hours INT NOT NULL DEFAULT 0;
+
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS claimed_by VARCHAR(32);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS category VARCHAR(64);
+ALTER TABLE tickets ADD COLUMN IF NOT EXISTS last_activity_at DATETIME NULL;
+
 CREATE INDEX idx_warnings_guild_user ON warnings(guild_id, user_id);
 CREATE INDEX idx_modactions_guild ON mod_actions(guild_id);
 CREATE INDEX idx_reactionroles_message ON reaction_roles(guild_id, message_id);
@@ -185,3 +238,6 @@ CREATE INDEX idx_scheduled_due ON scheduled_actions(executed, run_at);
 CREATE INDEX idx_tickets_guild_status ON tickets(guild_id, status);
 CREATE INDEX idx_giveaways_ended ON giveaways(ended, ends_at);
 CREATE INDEX idx_suggestions_guild ON suggestions(guild_id, status);
+CREATE INDEX idx_teams_guild ON teams(guild_id);
+CREATE INDEX idx_teammembers_guild_discord ON team_members(guild_id, discord_id);
+CREATE INDEX idx_levelroles_guild ON level_roles(guild_id);

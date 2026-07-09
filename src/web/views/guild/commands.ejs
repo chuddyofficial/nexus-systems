@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Command Toggles' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main" style="max-width:1100px;">
+      <div class="page-header">
+        <h1>Command Toggles</h1>
+        <p>Turn individual slash commands on or off for this server. Disabled commands reply with a quiet "disabled" message instead of running.</p>
+      </div>
+
+      <div id="command-groups"></div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/commands.js"></script>
+</body>
+</html>

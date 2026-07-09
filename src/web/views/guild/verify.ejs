@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head><%- include('../partials/head', { title: guild.name + ' — Verification' }) %></head>
+<body>
+  <div class="app-shell">
+    <%- include('../partials/sidebar') %>
+    <main class="main">
+      <div class="page-header">
+        <h1>Verification</h1>
+        <p>Require new members to click a button before they can access the rest of the server — a simple but effective anti-bot / anti-raid layer.</p>
+      </div>
+
+      <div class="card">
+        <h2>Setup</h2>
+        <p class="card-desc">Posts a verification panel with a button. Clicking it grants the role below.</p>
+        <div class="row">
+          <div class="field"><label>Panel Channel</label><select id="verify-channel"></select></div>
+          <div class="field"><label>Role to Grant</label><select id="verify-role"></select></div>
+        </div>
+        <div class="field"><label>Panel Message</label><textarea id="verify-message" rows="3"></textarea></div>
+        <button class="btn btn-primary" id="verify-post">✅ Post Verification Panel</button>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div><div class="toggle-label">Verification Enabled</div><div class="toggle-desc">Toggle off to pause verification without removing the panel.</div></div>
+          <label class="switch"><input type="checkbox" id="verify-enabled" /><span class="slider"></span></label>
+        </div>
+        <button class="btn" id="verify-save-toggle" style="margin-top:14px;">Save</button>
+      </div>
+
+      <div class="card">
+        <p class="card-desc">Tip: combine this with Auto-Role (Anti-Raid page) by making the auto-role an "Unverified" role with limited permissions, and setting this page's role to your real "Member" role.</p>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-root"></div>
+  <script src="/js/common.js"></script>
+  <script>window.GUILD_ID = <%- JSON.stringify(guildId) %>;</script>
+  <script src="/js/verify.js"></script>
+</body>
+</html>

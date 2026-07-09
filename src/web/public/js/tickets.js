@@ -16,6 +16,8 @@
         el('tr', {}, [
           el('td', { class: 'mono' }, `#${t.channel_id}`),
           el('td', { class: 'mono' }, t.user_id),
+          el('td', {}, t.category || '—'),
+          el('td', { class: 'mono' }, t.claimed_by ? `@${t.claimed_by}` : '—'),
           el('td', { class: 'muted' }, new Date(t.created_at.replace(' ', 'T') + 'Z').toLocaleString()),
           el('td', {}, el('button', {
             class: 'btn btn-sm btn-danger',
@@ -35,6 +37,7 @@
         el('tr', {}, [
           el('td', { class: 'mono' }, `#${t.channel_id}`),
           el('td', { class: 'mono' }, t.user_id),
+          el('td', {}, t.category || '—'),
           el('td', {}, el('span', { class: `badge ${t.status === 'open' ? 'badge-green' : 'badge-red'}` }, t.status)),
           el('td', { class: 'muted' }, new Date(t.created_at.replace(' ', 'T') + 'Z').toLocaleString()),
         ])
@@ -42,10 +45,14 @@
     }
   }
 
+  const config = await api(`/api/servers/${gid}/config`);
+  document.getElementById('auto_close_hours').value = config.ticket_auto_close_hours || 0;
+
   await Promise.all([
     populateChannelSelect(document.getElementById('panel_channel'), gid, null, false),
     populateCategorySelect(document.getElementById('category'), gid, null, false),
     populateRoleSelect(document.getElementById('support_role'), gid, null, false),
+    populateChannelSelect(document.getElementById('transcript_channel'), gid, config.ticket_transcript_channel),
   ]);
 
   document.getElementById('post-panel-btn').addEventListener('click', async () => {
@@ -56,6 +63,21 @@
     try {
       await api(`/api/servers/${gid}/tickets/setup`, { method: 'POST', body: { panelChannelId, categoryId, supportRoleId } });
       toast('Ticket panel posted!');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
+
+  document.getElementById('save-ticket-settings').addEventListener('click', async () => {
+    try {
+      await api(`/api/servers/${gid}/config`, {
+        method: 'POST',
+        body: {
+          ticket_transcript_channel: document.getElementById('transcript_channel').value || null,
+          ticket_auto_close_hours: Number(document.getElementById('auto_close_hours').value) || 0,
+        },
+      });
+      toast('Ticket settings saved.');
     } catch (err) {
       toast(err.message, 'error');
     }

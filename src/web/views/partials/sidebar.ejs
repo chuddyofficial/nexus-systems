@@ -1,3 +1,4 @@
+<% const canSee = (perm) => isServerManager || (typeof userPermissions !== 'undefined' && userPermissions && userPermissions.includes(perm)); %>
 <aside class="sidebar">
   <a href="/servers" class="brand" style="padding:2px 10px 14px 10px;font-size:14px;">
     <span class="dot"></span> Nexus Systems
@@ -19,33 +20,46 @@
   <div class="nav-section">General</div>
   <a class="navlink <%= page === 'overview' ? 'active' : '' %>" href="/servers/<%= guildId %>">📊 Overview</a>
   <a class="navlink <%= page === 'analytics' ? 'active' : '' %>" href="/servers/<%= guildId %>/analytics">📈 Analytics</a>
-  <a class="navlink <%= page === 'members' ? 'active' : '' %>" href="/servers/<%= guildId %>/members">👥 Members</a>
+  <% if (canSee('manage_moderation')) { %><a class="navlink <%= page === 'members' ? 'active' : '' %>" href="/servers/<%= guildId %>/members">👥 Members</a><% } %>
   <a class="navlink <%= page === 'console' ? 'active' : '' %>" href="/servers/<%= guildId %>/console">🖥️ Live Console</a>
 
+  <% if (canSee('manage_moderation') || canSee('manage_config') || canSee('manage_automod') || canSee('manage_antiraid')) { %>
   <div class="nav-section">Moderation</div>
-  <a class="navlink <%= page === 'moderation' ? 'active' : '' %>" href="/servers/<%= guildId %>/moderation">🔨 Moderation</a>
-  <a class="navlink <%= page === 'automod' ? 'active' : '' %>" href="/servers/<%= guildId %>/automod">🛡️ AutoMod</a>
-  <a class="navlink <%= page === 'antiraid' ? 'active' : '' %>" href="/servers/<%= guildId %>/antiraid">🚨 Anti-Raid &amp; Auto-Role</a>
-  <a class="navlink <%= page === 'warnings' ? 'active' : '' %>" href="/servers/<%= guildId %>/warnings">⚠️ Warnings</a>
-  <a class="navlink <%= page === 'notes' ? 'active' : '' %>" href="/servers/<%= guildId %>/notes">🗒️ Moderator Notes</a>
+  <% if (canSee('manage_moderation')) { %><a class="navlink <%= page === 'moderation' ? 'active' : '' %>" href="/servers/<%= guildId %>/moderation">🔨 Moderation</a><% } %>
+  <% if (canSee('manage_automod') || canSee('manage_config')) { %><a class="navlink <%= page === 'automod' ? 'active' : '' %>" href="/servers/<%= guildId %>/automod">🛡️ AutoMod</a><% } %>
+  <% if (canSee('manage_antiraid') || canSee('manage_config')) { %><a class="navlink <%= page === 'antiraid' ? 'active' : '' %>" href="/servers/<%= guildId %>/antiraid">🚨 Anti-Raid &amp; Auto-Role</a><% } %>
+  <% if (canSee('manage_config')) { %><a class="navlink <%= page === 'verify' ? 'active' : '' %>" href="/servers/<%= guildId %>/verify">✅ Verification</a><% } %>
+  <% if (canSee('manage_moderation')) { %><a class="navlink <%= page === 'warnings' ? 'active' : '' %>" href="/servers/<%= guildId %>/warnings">⚠️ Warnings</a><% } %>
+  <% if (canSee('manage_moderation')) { %><a class="navlink <%= page === 'notes' ? 'active' : '' %>" href="/servers/<%= guildId %>/notes">🗒️ Moderator Notes</a><% } %>
   <a class="navlink <%= page === 'modlog' ? 'active' : '' %>" href="/servers/<%= guildId %>/modlog">📜 Mod Log</a>
   <a class="navlink <%= page === 'auditlog' ? 'active' : '' %>" href="/servers/<%= guildId %>/auditlog">🕵️ Audit Log</a>
+  <% } %>
 
   <div class="nav-section">Engagement</div>
-  <a class="navlink <%= page === 'leveling' ? 'active' : '' %>" href="/servers/<%= guildId %>/leveling">⭐ Leveling</a>
-  <a class="navlink <%= page === 'starboard' ? 'active' : '' %>" href="/servers/<%= guildId %>/starboard">🌟 Starboard</a>
-  <a class="navlink <%= page === 'tickets' ? 'active' : '' %>" href="/servers/<%= guildId %>/tickets">🎫 Tickets</a>
-  <a class="navlink <%= page === 'giveaways' ? 'active' : '' %>" href="/servers/<%= guildId %>/giveaways">🎉 Giveaways</a>
-  <a class="navlink <%= page === 'suggestions' ? 'active' : '' %>" href="/servers/<%= guildId %>/suggestions">💡 Suggestions</a>
-  <a class="navlink <%= page === 'reactionroles' ? 'active' : '' %>" href="/servers/<%= guildId %>/reactionroles">🎭 Reaction Roles</a>
+  <% if (canSee('manage_config')) { %><a class="navlink <%= page === 'leveling' ? 'active' : '' %>" href="/servers/<%= guildId %>/leveling">⭐ Leveling</a><% } %>
+  <% if (canSee('manage_config')) { %><a class="navlink <%= page === 'starboard' ? 'active' : '' %>" href="/servers/<%= guildId %>/starboard">🌟 Starboard</a><% } %>
+  <% if (canSee('manage_tickets')) { %><a class="navlink <%= page === 'tickets' ? 'active' : '' %>" href="/servers/<%= guildId %>/tickets">🎫 Tickets</a><% } %>
+  <% if (canSee('manage_giveaways')) { %><a class="navlink <%= page === 'giveaways' ? 'active' : '' %>" href="/servers/<%= guildId %>/giveaways">🎉 Giveaways</a><% } %>
+  <% if (canSee('manage_suggestions')) { %><a class="navlink <%= page === 'suggestions' ? 'active' : '' %>" href="/servers/<%= guildId %>/suggestions">💡 Suggestions</a><% } %>
+  <% if (canSee('manage_reactionroles')) { %><a class="navlink <%= page === 'reactionroles' ? 'active' : '' %>" href="/servers/<%= guildId %>/reactionroles">🎭 Reaction Roles</a><% } %>
 
+  <% if (canSee('manage_config') || canSee('manage_embeds') || canSee('manage_customcommands')) { %>
   <div class="nav-section">Content</div>
-  <a class="navlink <%= page === 'welcome' ? 'active' : '' %>" href="/servers/<%= guildId %>/welcome">👋 Welcome / Leave</a>
-  <a class="navlink <%= page === 'embeds' ? 'active' : '' %>" href="/servers/<%= guildId %>/embeds">💬 Custom Embeds</a>
-  <a class="navlink <%= page === 'customcommands' ? 'active' : '' %>" href="/servers/<%= guildId %>/customcommands">⚡ Custom Commands</a>
+  <% if (canSee('manage_config')) { %><a class="navlink <%= page === 'welcome' ? 'active' : '' %>" href="/servers/<%= guildId %>/welcome">👋 Welcome / Leave</a><% } %>
+  <% if (canSee('manage_embeds')) { %><a class="navlink <%= page === 'embeds' ? 'active' : '' %>" href="/servers/<%= guildId %>/embeds">💬 Custom Embeds</a><% } %>
+  <% if (canSee('manage_customcommands')) { %><a class="navlink <%= page === 'customcommands' ? 'active' : '' %>" href="/servers/<%= guildId %>/customcommands">⚡ Custom Commands</a><% } %>
+  <% } %>
 
+  <% if (canSee('manage_commands') || isServerManager) { %>
+  <div class="nav-section">Access Control</div>
+  <% if (canSee('manage_commands')) { %><a class="navlink <%= page === 'commands' ? 'active' : '' %>" href="/servers/<%= guildId %>/commands">🎛️ Command Toggles</a><% } %>
+  <% if (isServerManager) { %><a class="navlink <%= page === 'teams' ? 'active' : '' %>" href="/servers/<%= guildId %>/teams">👑 Teams &amp; Permissions</a><% } %>
+  <% } %>
+
+  <% if (canSee('manage_config')) { %>
   <div class="nav-section">Server</div>
   <a class="navlink <%= page === 'backup' ? 'active' : '' %>" href="/servers/<%= guildId %>/backup">💾 Backup &amp; Restore</a>
+  <% } %>
 
   <a class="back-link" href="/servers">← All servers</a>
 </aside>

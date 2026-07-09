@@ -23,6 +23,19 @@
           el('td', {}, String(g.winner_count)),
           el('td', {}, el('span', { class: `badge ${g.ended ? 'badge-red' : 'badge-green'}` }, g.ended ? 'Ended' : 'Active')),
           el('td', { class: 'muted' }, new Date(g.ends_at.replace(' ', 'T') + 'Z').toLocaleString()),
+          el('td', {}, g.ended ? '' : el('button', {
+            class: 'btn btn-sm',
+            onclick: async () => {
+              if (!(await confirmDialog(`End "${g.prize}" now and pick winner(s)?`, { danger: false, confirmText: 'End Now' }))) return;
+              try {
+                await api(`/api/servers/${gid}/giveaways/${g.id}/end`, { method: 'POST' });
+                toast('Giveaway ended.');
+                loadGiveaways();
+              } catch (err) {
+                toast(err.message, 'error');
+              }
+            },
+          }, '🎉 End Now')),
         ])
       );
     }

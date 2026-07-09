@@ -21,6 +21,21 @@
       </div>
 
       <div class="card">
+        <h2>Level-Up Role Rewards</h2>
+        <p class="card-desc">Automatically grant a role when a member reaches a given level. Roles stack — a member keeps earlier rewards too.</p>
+        <div class="row">
+          <div class="field"><label>Level</label><input type="number" id="lr-level" min="1" placeholder="5" /></div>
+          <div class="field"><label>Role</label><select id="lr-role"></select></div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end;"><button class="btn" id="lr-add">+ Add</button></div>
+        </div>
+        <table>
+          <thead><tr><th>Level</th><th>Role</th><th></th></tr></thead>
+          <tbody id="lr-body"></tbody>
+        </table>
+        <div id="lr-empty" class="empty-state" style="display:none;">No level roles configured.</div>
+      </div>
+
+      <div class="card">
         <h2>Leaderboard</h2>
         <table>
           <thead><tr><th>#</th><th>User</th><th>Level</th><th>XP</th></tr></thead>

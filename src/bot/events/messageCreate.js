@@ -15,6 +15,7 @@ module.exports = {
     if (actioned) return;
 
     awardMessageXp(message).catch((err) => console.error('[leveling]', err));
+    db.touchTicketActivity(message.channel.id).catch(() => {});
 
     const cfg = await db.getGuildConfig(message.guild.id);
     const prefix = cfg.prefix || '!';

@@ -30,6 +30,7 @@ const guildPages = [
   'overview',
   'automod',
   'antiraid',
+  'verify',
   'welcome',
   'embeds',
   'warnings',
@@ -38,6 +39,8 @@ const guildPages = [
   'auditlog',
   'reactionroles',
   'customcommands',
+  'commands',
+  'teams',
   'moderation',
   'leveling',
   'starboard',
@@ -53,7 +56,14 @@ const guildPages = [
 for (const page of guildPages) {
   const urlPath = page === 'overview' ? '/servers/:guildId' : `/servers/:guildId/${page}`;
   router.get(urlPath, ensureAuth, ensureGuildAccess, (req, res) => {
-    res.render(`guild/${page}`, { user: req.user, guild: req.botGuild, guildId: req.params.guildId, page });
+    res.render(`guild/${page}`, {
+      user: req.user,
+      guild: req.botGuild,
+      guildId: req.params.guildId,
+      page,
+      isServerManager: req.isServerManager,
+      userPermissions: req.isServerManager ? null : [...req.userPermissions],
+    });
   });
 }
 
