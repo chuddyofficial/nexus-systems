@@ -61,9 +61,17 @@ async function initDb() {
       try {
         await conn.query(statement);
       } catch (err) {
-        // Re-running the installer / restarting shouldn't fail on indexes or
-        // tables that already exist (CREATE INDEX has no IF NOT EXISTS in MySQL).
-        if (err.code === 'ER_DUP_KEYNAME' || err.code === 'ER_TABLE_EXISTS_ERROR') continue;
+        // Re-running the installer / restarting shouldn't fail on indexes,
+        // tables, or columns that already exist — MySQL has no "IF NOT
+        // EXISTS" for CREATE INDEX or ALTER TABLE ADD COLUMN (unlike
+        // MariaDB), so idempotency on re-run is handled here instead.
+        if (
+          err.code === 'ER_DUP_KEYNAME' ||
+          err.code === 'ER_TABLE_EXISTS_ERROR' ||
+          err.code === 'ER_DUP_FIELDNAME'
+        ) {
+          continue;
+        }
         throw err;
       }
     }

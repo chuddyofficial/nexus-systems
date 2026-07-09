@@ -213,21 +213,23 @@ CREATE TABLE IF NOT EXISTS level_roles (
   UNIQUE KEY uniq_guild_level (guild_id, level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Columns added after the initial release. Using idempotent ALTERs (rather
--- than folding them into the CREATE TABLE statements above) means this file
--- stays safe to re-run against both brand-new and already-provisioned
--- databases — new installs and upgrades converge on the same schema.
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_enabled TINYINT(1) NOT NULL DEFAULT 0;
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_role_id VARCHAR(32);
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_channel_id VARCHAR(32);
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_message VARCHAR(1000) DEFAULT 'Click the button below to verify yourself and gain access to the rest of the server.';
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS verify_panel_message VARCHAR(32);
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS ticket_transcript_channel VARCHAR(32);
-ALTER TABLE guild_config ADD COLUMN IF NOT EXISTS ticket_auto_close_hours INT NOT NULL DEFAULT 0;
+-- Columns added after the initial release, applied via plain ALTER TABLE
+-- (MySQL, unlike MariaDB, has no "ADD COLUMN IF NOT EXISTS" — idempotency
+-- on re-run is instead handled in db.js's initDb() by tolerating the
+-- "duplicate column" error code). Kept as separate ALTERs rather than
+-- folded into the CREATE TABLE statements above so this file stays safe to
+-- run against both brand-new and already-provisioned databases.
+ALTER TABLE guild_config ADD COLUMN verify_enabled TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN verify_role_id VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN verify_channel_id VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN verify_message VARCHAR(1000) DEFAULT 'Click the button below to verify yourself and gain access to the rest of the server.';
+ALTER TABLE guild_config ADD COLUMN verify_panel_message VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN ticket_transcript_channel VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN ticket_auto_close_hours INT NOT NULL DEFAULT 0;
 
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS claimed_by VARCHAR(32);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS category VARCHAR(64);
-ALTER TABLE tickets ADD COLUMN IF NOT EXISTS last_activity_at DATETIME NULL;
+ALTER TABLE tickets ADD COLUMN claimed_by VARCHAR(32);
+ALTER TABLE tickets ADD COLUMN category VARCHAR(64);
+ALTER TABLE tickets ADD COLUMN last_activity_at DATETIME NULL;
 
 CREATE INDEX idx_warnings_guild_user ON warnings(guild_id, user_id);
 CREATE INDEX idx_modactions_guild ON mod_actions(guild_id);
