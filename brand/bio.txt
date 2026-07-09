@@ -1,0 +1,62 @@
+====================================================
+NEXUS SYSTEMS — BIOS
+====================================================
+
+
+----------------------------------------------------
+1. DISCORD SERVER BIO
+----------------------------------------------------
+
+Name:
+Nexus Systems
+
+Short tagline (for server discovery / invite embeds):
+Official Discord server for Nexus Systems — the CH Services official Discord bot.
+
+Full description:
+Welcome to Nexus Systems — the official Discord server for the Nexus
+Systems bot, brought to you by CH Services.
+
+This is home base for a full community security & moderation toolkit:
+AutoMod, anti-raid protection, tickets, verification, leveling,
+giveaways, and a real-time web dashboard, all in one bot. Join here to
+get support, follow updates and new releases, report issues, and talk
+directly with the team behind it.
+
+What you'll find here:
+  • Official support for the Nexus Systems bot
+  • Announcements for new features and updates
+  • A place to suggest features and report bugs
+  • Direct access to the CH Services team
+
+Server Description (short, character-limited fields):
+Official Discord server for Nexus Systems — the CH Services official
+Discord bot. Get support, updates, and talk to the team.
+
+
+----------------------------------------------------
+2. BOT BIO
+----------------------------------------------------
+
+Name:
+Nexus Systems
+
+Short tagline:
+Community security & moderation, built to run at scale.
+
+Discord Developer Portal "Description" field (character-limited, ~400 max):
+Nexus Systems is a full community security & moderation bot with a real
+web dashboard. AutoMod, anti-raid, tickets, verification, leveling,
+giveaways, reaction roles, and more — every setting configurable per
+server, right from the browser. Built and maintained by CH Services.
+
+Longer bot description (for listing sites / README-style use):
+Nexus Systems is an all-in-one Discord bot for community security and
+moderation, built by CH Services. It combines the moderation depth of a
+traditional bot (AutoMod, anti-raid, warnings, temp-bans, mod logs) with
+engagement tools (leveling, starboard, giveaways, tickets, suggestions)
+and a complete web dashboard — so server staff can configure everything
+visually instead of memorizing commands. Every server gets its own
+independent configuration, permission teams, and command controls, making
+Nexus Systems suitable for anything from a small community to a large,
+multi-team server network.

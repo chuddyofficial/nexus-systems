@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "deploy-commands": "node src/bot/deploy-commands.js"
+    "deploy-commands": "node src/bot/deploy-commands.js",
+    "generate-brand-assets": "node scripts/generate-brand-assets.js"
   },
   "dependencies": {
     "discord.js": "^14.16.3",
@@ -21,5 +22,8 @@
     "passport": "^0.7.0",
     "passport-discord": "^0.1.4",
     "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "sharp": "^0.33.5"
   }
 }

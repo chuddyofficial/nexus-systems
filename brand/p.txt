@@ -1,0 +1,124 @@
+Nexus Systems — Privacy Policy
+Last updated: July 9, 2026
+
+
+1. OVERVIEW
+
+This Privacy Policy explains what information CH Services ("we," "us,"
+"our") collects through the Nexus Systems Discord bot and web dashboard
+(together, the "Service"), how we use it, and the choices available to
+you. By using the Service, you agree to the collection and use of
+information as described here.
+
+
+2. INFORMATION WE COLLECT
+
+2.1 Information from Discord. When Nexus Systems is added to a server,
+or when you log into the web dashboard via Discord OAuth2, we may
+receive:
+  • Discord user IDs, usernames, and avatars
+  • Discord server (guild) IDs and names
+  • Role and channel IDs relevant to features you configure
+  • The list of servers you have access to, solely to determine which
+    servers you are authorized to manage in the dashboard
+
+2.2 Content Processed for Moderation and Features. To provide
+moderation and community features, the Service processes:
+  • Message content, for AutoMod filtering (e.g. banned words, invite
+    links, spam detection) and custom command matching
+  • Moderation records you or your staff create: warnings, mod notes,
+    ban/kick/timeout logs, and the reasons provided for them
+  • Feature-specific data you configure or generate: tickets,
+    suggestions, giveaway entries, leveling/XP data, starboard posts,
+    reaction-role mappings, and custom embeds
+
+2.3 Dashboard Sessions. The web dashboard uses session cookies to keep
+you logged in. We do not use third-party advertising or tracking
+cookies.
+
+2.4 We Do Not Collect. We do not collect your Discord password (OAuth2
+never shares it with us), payment information, or data from Discord
+servers the bot has not been added to.
+
+
+3. HOW WE USE INFORMATION
+
+We use the information described above to:
+  • Operate the Service's moderation, security, and engagement features
+  • Display server configuration and activity in the web dashboard
+  • Enforce permissions (including Teams and role-based access you
+    configure) so only authorized users can manage a given server
+  • Maintain logs (mod actions, message edits/deletes, join/leave
+    events) that your server's staff has chosen to enable
+  • Diagnose and fix technical issues
+
+We do not sell, rent, or share your data with third parties for
+marketing purposes.
+
+
+4. DATA STORAGE
+
+Data is stored in a database operated by CH Services, used exclusively
+to run the Service. Data for each Discord server is logically
+separated by server (guild) ID. We apply reasonable technical measures
+(such as restricted database access and encrypted transport) to
+protect stored data, but no method of storage or transmission is
+completely secure, and we cannot guarantee absolute security.
+
+
+5. DATA RETENTION
+
+We retain data for as long as Nexus Systems remains active in a
+server, or as needed to provide the Service. If Nexus Systems is
+removed from a server, associated configuration and records may be
+retained for a reasonable period afterward (in case the bot is
+re-added) and may be deleted thereafter. You may request deletion of
+your server's data by contacting us, as described in Section 8.
+
+
+6. THIRD-PARTY SERVICES
+
+The Service operates on top of Discord's platform and API. Discord's
+own collection and use of your information is governed by Discord's
+Privacy Policy, which we do not control. Where the Service is deployed
+on cloud infrastructure (e.g., a hosting provider), that provider may
+process data on our behalf solely to operate the Service.
+
+
+7. CHILDREN'S PRIVACY
+
+The Service is intended for use in accordance with Discord's own
+minimum age requirements. We do not knowingly collect information from
+individuals below the minimum age required to use Discord.
+
+
+8. YOUR CHOICES AND RIGHTS
+
+  • Server staff can disable specific features (e.g., logging,
+    leveling, AutoMod content scanning) at any time via the dashboard,
+    which stops new data collection for that feature going forward.
+  • You may request access to, correction of, or deletion of data
+    associated with your Discord server or user ID by contacting the
+    CH Services team through the official Nexus Systems Discord
+    server.
+  • Removing Nexus Systems from your server stops all further data
+    collection from that server.
+
+
+9. CHANGES TO THIS POLICY
+
+We may update this Privacy Policy from time to time. Material changes
+will be reflected by updating the "Last updated" date above. Continued
+use of the Service after changes take effect constitutes acceptance of
+the revised policy.
+
+
+10. CONTACT
+
+Questions about this Privacy Policy can be directed to the CH Services
+team through the official Nexus Systems Discord server.
+
+
+====================================================
+End of Privacy Policy
+====================================================

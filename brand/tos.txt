@@ -1,0 +1,152 @@
+Nexus Systems — Terms of Service
+Last updated: July 9, 2026
+
+
+1. AGREEMENT TO TERMS
+
+These Terms of Service ("Terms") are a legal agreement between you
+("you," "User," or "Server Owner") and CH Services ("we," "us," "our"),
+governing your access to and use of the Nexus Systems Discord bot and
+its accompanying web dashboard (together, the "Service").
+
+By inviting Nexus Systems to a Discord server, logging into the web
+dashboard, or otherwise using the Service, you agree to be bound by
+these Terms. If you do not agree, do not use the Service.
+
+
+2. THE SERVICE
+
+Nexus Systems is a Discord bot that provides moderation, security,
+automation, and community-engagement tools (including but not limited
+to AutoMod, anti-raid protection, ticketing, verification, leveling,
+giveaways, reaction roles, and logging), along with a web dashboard for
+configuring those features per Discord server.
+
+We may add, remove, or modify features of the Service at any time,
+with or without notice.
+
+
+3. ELIGIBILITY
+
+You must comply with Discord's own Terms of Service and Community
+Guidelines to use Nexus Systems. You are responsible for ensuring that
+your use of the Service, and any configuration you apply to your
+server, complies with all applicable laws and with Discord's policies.
+
+
+4. ACCOUNTS AND ACCESS
+
+4.1 Dashboard Login. The web dashboard authenticates using Discord
+OAuth2. You are responsible for maintaining the security of your
+Discord account; we do not have access to your Discord password.
+
+4.2 Server Permissions. Access to configure a given Discord server
+through the dashboard is limited to users who hold the "Manage Server"
+permission (or equivalent, including any permission Teams configured
+within the Service) on that server. It is the Server Owner's
+responsibility to manage who holds these permissions.
+
+4.3 Teams and Roles. The Service allows Server Owners and authorized
+users to create internal "Teams" with configurable permissions and to
+add members to those Teams by Discord user ID. You are solely
+responsible for whom you grant access to via this feature.
+
+
+5. ACCEPTABLE USE
+
+You agree not to use the Service to:
+
+  a. Violate any applicable law or regulation;
+  b. Violate Discord's Terms of Service or Community Guidelines;
+  c. Harass, abuse, or harm another person or group;
+  d. Circumvent, disable, or interfere with security-related features
+     of the Service, including AutoMod, anti-raid, or verification
+     systems, for a malicious purpose;
+  e. Attempt to gain unauthorized access to the Service, other users'
+     data, or systems connected to the Service;
+  f. Use the Service to distribute malware, spam, or unlawful content;
+  g. Reverse-engineer, decompile, or attempt to extract the source
+     code of the Service, except as permitted by open-source licensing
+     terms we may separately publish.
+
+We reserve the right to suspend or terminate access to the Service,
+for any server or user, at our discretion, for violation of these
+Terms.
+
+
+6. SERVER OWNER RESPONSIBILITIES
+
+Server Owners and administrators are responsible for how they
+configure Nexus Systems on their server, including moderation actions
+taken by staff using the Service, automated actions resulting from
+AutoMod or anti-raid configuration, and any custom content added
+through features such as custom commands, embeds, or welcome messages.
+We are not responsible for moderation decisions made by your server's
+staff using tools we provide.
+
+
+7. AVAILABILITY
+
+We aim to keep the Service available and reliable but do not guarantee
+uninterrupted operation. The Service may be unavailable due to
+maintenance, updates, hosting issues, or factors outside our control
+(including Discord API outages). We are not liable for any loss
+resulting from downtime.
+
+
+8. DATA
+
+Our collection and use of data in connection with the Service is
+described in our Privacy Policy, which is incorporated into these
+Terms by reference.
+
+
+9. THIRD-PARTY SERVICES
+
+The Service relies on Discord's API and infrastructure. Your use of
+Discord is separately governed by Discord's own Terms of Service and
+Privacy Policy. We are not responsible for Discord's availability,
+policies, or actions.
+
+
+10. TERMINATION
+
+You may stop using the Service at any time by removing Nexus Systems
+from your server and/or ceasing to use the dashboard. We may suspend
+or terminate the Service, in whole or in part, for any server or user,
+at any time, particularly in response to violations of these Terms.
+
+
+11. DISCLAIMER OF WARRANTIES
+
+THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES
+OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR
+NON-INFRINGEMENT.
+
+
+12. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, CH SERVICES SHALL NOT BE LIABLE
+FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE
+DAMAGES, OR ANY LOSS OF DATA, REVENUE, OR GOODWILL, ARISING FROM YOUR
+USE OF THE SERVICE.
+
+
+13. CHANGES TO THESE TERMS
+
+We may update these Terms from time to time. Material changes will be
+reflected by updating the "Last updated" date above. Continued use of
+the Service after changes take effect constitutes acceptance of the
+revised Terms.
+
+
+14. CONTACT
+
+Questions about these Terms can be directed to the CH Services team
+through the official Nexus Systems Discord server.
+
+
+====================================================
+End of Terms of Service
+====================================================
