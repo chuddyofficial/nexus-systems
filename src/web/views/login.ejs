@@ -3,15 +3,30 @@
 <head><%- include('partials/head', { title: 'Login — Nexus Systems' }) %></head>
 <body>
   <div class="login-wrap">
-    <div class="login-card">
-      <div class="logo-circle"><img src="/favicon.png" alt="" width="40" height="40" /></div>
-      <h1>Nexus Systems</h1>
-      <p>Sign in with Discord to manage your servers' security and moderation settings.</p>
-      <a href="/auth/discord" class="discord-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.369A19.791 19.791 0 0 0 16.558 3c-.192.35-.379.72-.548 1.09a18.27 18.27 0 0 0-5.02 0A9.99 9.99 0 0 0 10.442 3a19.736 19.736 0 0 0-3.76 1.369C3.72 7.86 2.9 11.27 3.15 14.62a19.9 19.9 0 0 0 5.993 3.03c.482-.66.91-1.36 1.276-2.09a12.9 12.9 0 0 1-2.01-.97c.169-.123.335-.252.494-.384a14.29 14.29 0 0 0 12.192 0c.16.132.325.261.494.384-.638.372-1.31.694-2.012.97.367.73.795 1.43 1.276 2.09a19.83 19.83 0 0 0 6.002-3.03c.31-3.9-.591-7.27-2.538-10.25ZM9.68 12.9c-.85 0-1.55-.79-1.55-1.76 0-.98.68-1.77 1.55-1.77.878 0 1.578.8 1.55 1.77.001.97-.672 1.76-1.55 1.76Zm6.64 0c-.85 0-1.55-.79-1.55-1.76 0-.98.68-1.77 1.55-1.77.878 0 1.568.8 1.55 1.77 0 .97-.672 1.76-1.55 1.76Z"/></svg>
-        Login with Discord
-      </a>
-      <p style="margin-top:22px;font-size:12px;">By logging in you allow Nexus Systems to see the servers you manage. We only ever read your server list to check permissions — nothing else.</p>
+    <div class="login-showcase">
+      <div class="content">
+        <div class="brand" style="margin-bottom:28px;"><span class="dot"></span> Nexus Systems</div>
+        <h2>Community security, built to run at scale.</h2>
+        <p>Sign in to manage AutoMod, anti-raid, tickets, leveling, giveaways, and every other setting from one dashboard — no slash commands required.</p>
+        <div class="showcase-list">
+          <div class="showcase-item"><span class="icon">🛡️</span> Full moderation &amp; anti-nuke suite</div>
+          <div class="showcase-item"><span class="icon">🎫</span> Unlimited-friendly ticket panels</div>
+          <div class="showcase-item"><span class="icon">📈</span> Real-time console &amp; analytics</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-card-wrap">
+      <div class="login-card">
+        <div class="logo-circle"><img src="/favicon.png" alt="" width="40" height="40" /></div>
+        <h1>Welcome back</h1>
+        <p>Sign in with Discord to manage your servers' security and moderation settings.</p>
+        <a href="/auth/discord" class="discord-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.369A19.791 19.791 0 0 0 16.558 3c-.192.35-.379.72-.548 1.09a18.27 18.27 0 0 0-5.02 0A9.99 9.99 0 0 0 10.442 3a19.736 19.736 0 0 0-3.76 1.369C3.72 7.86 2.9 11.27 3.15 14.62a19.9 19.9 0 0 0 5.993 3.03c.482-.66.91-1.36 1.276-2.09a12.9 12.9 0 0 1-2.01-.97c.169-.123.335-.252.494-.384a14.29 14.29 0 0 0 12.192 0c.16.132.325.261.494.384-.638.372-1.31.694-2.012.97.367.73.795 1.43 1.276 2.09a19.83 19.83 0 0 0 6.002-3.03c.31-3.9-.591-7.27-2.538-10.25ZM9.68 12.9c-.85 0-1.55-.79-1.55-1.76 0-.98.68-1.77 1.55-1.77.878 0 1.578.8 1.55 1.77.001.97-.672 1.76-1.55 1.76Zm6.64 0c-.85 0-1.55-.79-1.55-1.76 0-.98.68-1.77 1.55-1.77.878 0 1.568.8 1.55 1.77 0 .97-.672 1.76-1.55 1.76Z"/></svg>
+          Login with Discord
+        </a>
+        <p style="margin-top:22px;font-size:12px;">By logging in you allow Nexus Systems to see the servers you manage. We only ever read your server list to check permissions — nothing else.</p>
+      </div>
     </div>
   </div>
 </body>
