@@ -23,19 +23,32 @@
           el('td', {}, String(g.winner_count)),
           el('td', {}, el('span', { class: `badge ${g.ended ? 'badge-red' : 'badge-green'}` }, g.ended ? 'Ended' : 'Active')),
           el('td', { class: 'muted' }, new Date(g.ends_at.replace(' ', 'T') + 'Z').toLocaleString()),
-          el('td', {}, g.ended ? '' : el('button', {
-            class: 'btn btn-sm',
-            onclick: async () => {
-              if (!(await confirmDialog(`End "${g.prize}" now and pick winner(s)?`, { danger: false, confirmText: 'End Now' }))) return;
-              try {
-                await api(`/api/servers/${gid}/giveaways/${g.id}/end`, { method: 'POST' });
-                toast('Giveaway ended.');
-                loadGiveaways();
-              } catch (err) {
-                toast(err.message, 'error');
-              }
-            },
-          }, '🎉 End Now')),
+          el('td', {}, g.ended
+            ? el('button', {
+                class: 'btn btn-sm',
+                onclick: async () => {
+                  if (!(await confirmDialog(`Reroll "${g.prize}" and pick new winner(s)?`, { danger: false, confirmText: 'Reroll' }))) return;
+                  try {
+                    await api(`/api/servers/${gid}/giveaways/${g.id}/reroll`, { method: 'POST' });
+                    toast('Rerolled!');
+                  } catch (err) {
+                    toast(err.message, 'error');
+                  }
+                },
+              }, '🔁 Reroll')
+            : el('button', {
+                class: 'btn btn-sm',
+                onclick: async () => {
+                  if (!(await confirmDialog(`End "${g.prize}" now and pick winner(s)?`, { danger: false, confirmText: 'End Now' }))) return;
+                  try {
+                    await api(`/api/servers/${gid}/giveaways/${g.id}/end`, { method: 'POST' });
+                    toast('Giveaway ended.');
+                    loadGiveaways();
+                  } catch (err) {
+                    toast(err.message, 'error');
+                  }
+                },
+              }, '🎉 End Now')),
         ])
       );
     }
@@ -46,12 +59,14 @@
     const prize = document.getElementById('gw-prize').value.trim();
     const durationInput = document.getElementById('gw-duration').value;
     const winnerCount = Number(document.getElementById('gw-winners').value) || 1;
+    const requiredRoleId = document.getElementById('gw-role').value || null;
+    const minLevel = Number(document.getElementById('gw-minlevel').value) || 0;
     if (!channelId || !prize) return toast('Pick a channel and enter a prize.', 'error');
     const durationMs = parseDuration(durationInput);
     if (!durationMs) return toast('Invalid duration — use formats like 30m, 2h, 1d.', 'error');
 
     try {
-      await api(`/api/servers/${gid}/giveaways`, { method: 'POST', body: { channelId, prize, winnerCount, durationMs } });
+      await api(`/api/servers/${gid}/giveaways`, { method: 'POST', body: { channelId, prize, winnerCount, durationMs, requiredRoleId, minLevel } });
       toast('Giveaway started!');
       document.getElementById('gw-prize').value = '';
       document.getElementById('gw-duration').value = '';
@@ -62,5 +77,6 @@
   });
 
   populateChannelSelect(document.getElementById('gw-channel'), gid, null, false);
+  populateRoleSelect(document.getElementById('gw-role'), gid, null, true);
   loadGiveaways().catch((err) => toast(err.message, 'error'));
 })();

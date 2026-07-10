@@ -5,6 +5,7 @@ const { processDueGiveaways } = require('./giveaways');
 const { postTranscript } = require('./tickets');
 
 const CHECK_INTERVAL_MS = 20_000;
+let lastVipReminderDate = null; // "YYYY-MM-DD" — gates the once-a-day VIP expiry sweep
 
 async function processDueScheduledActions(client) {
   const due = await db.getDueScheduledActions();
@@ -43,8 +44,49 @@ function startScheduler(client) {
     processDueScheduledActions(client).catch((err) => console.error('[scheduler]', err));
     processDueGiveaways(client).catch((err) => console.error('[scheduler]', err));
     processStaleTickets(client).catch((err) => console.error('[scheduler]', err));
+    processDueReminders(client).catch((err) => console.error('[scheduler]', err));
+    processVipExpiryReminders(client).catch((err) => console.error('[scheduler]', err));
   }, CHECK_INTERVAL_MS);
   console.log('[scheduler] Started (interval ' + CHECK_INTERVAL_MS + 'ms)');
+}
+
+async function processDueReminders(client) {
+  const due = await db.getDueReminders();
+  for (const reminder of due) {
+    await db.markReminderFulfilled(reminder.id);
+    try {
+      const user = await client.users.fetch(reminder.user_id);
+      const text = `⏰ **Reminder:** ${reminder.message}`;
+      const sent = await user.send(text).catch(() => null);
+      if (!sent) {
+        const guild = reminder.guild_id ? client.guilds.cache.get(reminder.guild_id) : null;
+        const channel = guild?.channels.cache.get(reminder.channel_id);
+        if (channel?.isTextBased()) await channel.send(`<@${reminder.user_id}> ${text}`).catch(() => {});
+      }
+    } catch (err) {
+      pushConsole(reminder.guild_id, 'system', `Reminder ${reminder.id} failed to send: ${err.message}`);
+    }
+  }
+}
+
+async function processVipExpiryReminders(client) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (lastVipReminderDate === today) return;
+  lastVipReminderDate = today;
+
+  const expiring = await db.getGuildsWithExpiringVip(7);
+  for (const row of expiring) {
+    const guild = client.guilds.cache.get(row.guild_id);
+    if (!guild) continue;
+    const cfg = await db.getGuildConfig(row.guild_id);
+    const channel = cfg.mod_log_channel ? guild.channels.cache.get(cfg.mod_log_channel) : null;
+    const expiresText = `<t:${Math.floor(new Date(row.vip_expires_at.replace(' ', 'T') + 'Z').getTime() / 1000)}:R>`;
+    const text = `💎 This server's VIP expires ${expiresText}. Contact the Nexus Systems team to renew.`;
+    if (channel?.isTextBased()) {
+      channel.send(text).catch(() => {});
+    }
+    pushConsole(row.guild_id, 'system', `VIP expiry reminder: expires ${row.vip_expires_at}`);
+  }
 }
 
 async function processStaleTickets(client) {

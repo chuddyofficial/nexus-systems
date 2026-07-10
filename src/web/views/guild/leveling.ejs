@@ -17,7 +17,18 @@
         </div>
         <div class="field" style="margin-top:14px;"><label>Level-up Announcement Channel</label><select id="leveling_announce_channel"></select></div>
         <div class="field"><label>Level-up Message</label><input type="text" id="leveling_announce_message" /><div class="field-hint">Placeholders: {user} {level} {server}</div></div>
+        <div class="field"><label>XP Multiplier (%, 100 = normal) <span id="vip-multiplier-note" class="muted" style="display:none;">— VIP servers get an automatic extra 2x on top of this</span></label><input type="number" id="leveling_xp_multiplier" min="0" max="1000" step="25" /></div>
         <button class="btn btn-primary" id="save-btn">Save Leveling Settings</button>
+      </div>
+
+      <div class="card">
+        <h2>No-XP Channels</h2>
+        <p class="card-desc">Messages in these channels never earn XP (e.g. bot-commands, giveaway channels).</p>
+        <div class="row">
+          <select id="noxp-channel-select"></select>
+          <button class="btn" id="add-noxp-channel" style="flex:0 0 auto;">Add</button>
+        </div>
+        <div class="tag-list" id="noxp-channels-list"></div>
       </div>
 
       <div class="card">
@@ -38,7 +49,7 @@
       <div class="card">
         <h2>Leaderboard</h2>
         <table>
-          <thead><tr><th>#</th><th>User</th><th>Level</th><th>XP</th></tr></thead>
+          <thead><tr><th>#</th><th>User</th><th>Level</th><th>XP</th><th></th></tr></thead>
           <tbody id="lb-body"></tbody>
         </table>
         <div id="lb-empty" class="empty-state" style="display:none;">No XP data yet.</div>

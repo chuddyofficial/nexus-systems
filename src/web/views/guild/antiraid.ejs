@@ -67,6 +67,14 @@
             </select>
           </div>
         </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Trusted Bypass List (roles or users exempt from anti-nuke)</label>
+          <div class="row">
+            <input type="text" id="antinuke-bypass-input" placeholder="Role or user ID" />
+            <button class="btn" id="add-antinuke-bypass" style="flex:0 0 auto;">Add</button>
+          </div>
+          <div class="tag-list" id="antinuke-bypass-list"></div>
+        </div>
         <button class="btn btn-primary" id="save-antinuke">Save Anti-Nuke Settings</button>
       </div>
     </main>

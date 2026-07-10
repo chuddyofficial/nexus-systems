@@ -2,6 +2,8 @@
   const gid = window.GUILD_ID;
   let bannedWords = [];
   let ignoredChannels = [];
+  let regexPatterns = [];
+  let linkWhitelist = [];
   let channelMap = {};
 
   const boolFields = [
@@ -10,6 +12,9 @@
     'automod_anti_spam',
     'automod_anti_mass_mention',
     'automod_caps_filter',
+    'automod_anti_link',
+    'automod_repeated_chars',
+    'automod_emoji_spam',
   ];
   const numberFields = [
     'automod_spam_threshold',
@@ -17,19 +22,39 @@
     'automod_max_mentions',
     'automod_caps_percent',
     'automod_caps_min_len',
+    'automod_repeated_chars_max',
+    'automod_emoji_spam_max',
   ];
 
-  function renderBannedWords() {
-    const list = document.getElementById('banned-words-list');
+  function renderTagList(elementId, items, onRemove) {
+    const list = document.getElementById(elementId);
     list.innerHTML = '';
-    for (const w of bannedWords) {
+    for (const item of items) {
       list.appendChild(
-        el('div', { class: 'tag-chip' }, [
-          document.createTextNode(w),
-          el('button', { onclick: () => { bannedWords = bannedWords.filter((x) => x !== w); renderBannedWords(); } }, '✕'),
-        ])
+        el('div', { class: 'tag-chip' }, [document.createTextNode(item), el('button', { onclick: () => onRemove(item) }, '✕')])
       );
     }
+  }
+
+  function renderBannedWords() {
+    renderTagList('banned-words-list', bannedWords, (w) => {
+      bannedWords = bannedWords.filter((x) => x !== w);
+      renderBannedWords();
+    });
+  }
+
+  function renderRegexPatterns() {
+    renderTagList('regex-patterns-list', regexPatterns, (p) => {
+      regexPatterns = regexPatterns.filter((x) => x !== p);
+      renderRegexPatterns();
+    });
+  }
+
+  function renderLinkWhitelist() {
+    renderTagList('link-whitelist-list', linkWhitelist, (d) => {
+      linkWhitelist = linkWhitelist.filter((x) => x !== d);
+      renderLinkWhitelist();
+    });
   }
 
   function renderIgnoredChannels() {
@@ -54,8 +79,12 @@
 
     bannedWords = [...(config.automod_banned_words || [])];
     ignoredChannels = [...(config.automod_ignored_channels || [])];
+    regexPatterns = [...(config.automod_word_regex_patterns || [])];
+    linkWhitelist = [...(config.automod_link_whitelist || [])];
     renderBannedWords();
     renderIgnoredChannels();
+    renderRegexPatterns();
+    renderLinkWhitelist();
 
     await populateChannelSelect(document.getElementById('ignored-channel-select'), gid, null, false);
 
@@ -65,6 +94,32 @@
       if (val && !bannedWords.includes(val)) {
         bannedWords.push(val);
         renderBannedWords();
+      }
+      input.value = '';
+    });
+
+    document.getElementById('add-regex-pattern').addEventListener('click', () => {
+      const input = document.getElementById('regex-pattern-input');
+      const val = input.value.trim();
+      if (!val) return;
+      try {
+        new RegExp(val);
+      } catch {
+        return toast('That is not a valid regular expression.', 'error');
+      }
+      if (!regexPatterns.includes(val)) {
+        regexPatterns.push(val);
+        renderRegexPatterns();
+      }
+      input.value = '';
+    });
+
+    document.getElementById('add-link-whitelist').addEventListener('click', () => {
+      const input = document.getElementById('link-whitelist-input');
+      const val = input.value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      if (val && !linkWhitelist.includes(val)) {
+        linkWhitelist.push(val);
+        renderLinkWhitelist();
       }
       input.value = '';
     });
@@ -83,6 +138,8 @@
       for (const f of numberFields) patch[f] = Number(document.getElementById(f).value);
       patch.automod_banned_words = bannedWords;
       patch.automod_ignored_channels = ignoredChannels;
+      patch.automod_word_regex_patterns = regexPatterns;
+      patch.automod_link_whitelist = linkWhitelist;
       try {
         await api(`/api/servers/${gid}/config`, { method: 'POST', body: patch });
         toast('AutoMod settings saved.');

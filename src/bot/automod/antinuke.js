@@ -10,6 +10,8 @@ async function trackAction(guild, executorId, actionType) {
 
   const cfg = await db.getGuildConfig(guild.id);
   if (!cfg.antinuke_enabled) return;
+  if (cfg.antinuke_bypass_ids.includes(executorId)) return;
+  if (guild.members.cache.get(executorId)?.roles.cache.some((r) => cfg.antinuke_bypass_ids.includes(r.id))) return;
 
   const now = Date.now();
   let guildMap = recentActions.get(guild.id);

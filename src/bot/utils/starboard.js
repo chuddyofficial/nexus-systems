@@ -18,7 +18,11 @@ async function handleStarReaction(reaction, user) {
   if (reaction.emoji.name !== cfg.starboard_emoji) return;
   if (message.channel.id === cfg.starboard_channel) return;
 
-  const starCount = reaction.count ?? 0;
+  let starCount = reaction.count ?? 0;
+  if (cfg.starboard_exclude_self && message.author) {
+    const reactors = await reaction.users.fetch();
+    starCount = reactors.filter((u) => u.id !== message.author.id).size;
+  }
   if (starCount < cfg.starboard_threshold) return;
 
   const starChannel = message.guild.channels.cache.get(cfg.starboard_channel);

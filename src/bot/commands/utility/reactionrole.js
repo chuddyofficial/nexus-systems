@@ -12,6 +12,7 @@ module.exports = {
         .addStringOption((o) => o.setName('message_id').setDescription('ID of the message').setRequired(true))
         .addStringOption((o) => o.setName('emoji').setDescription('Emoji to react with (unicode or custom)').setRequired(true))
         .addRoleOption((o) => o.setName('role').setDescription('Role to grant').setRequired(true))
+        .addStringOption((o) => o.setName('group').setDescription('Exclusive group name — picking one role in a group removes any other from it'))
     )
     .addSubcommand((sc) => sc.setName('list').setDescription('List reaction roles in this server'))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
@@ -30,6 +31,7 @@ module.exports = {
     const messageId = interaction.options.getString('message_id', true);
     const emojiInput = interaction.options.getString('emoji', true);
     const role = interaction.options.getRole('role', true);
+    const group = interaction.options.getString('group');
 
     const existing = await db.getReactionRoles(interaction.guild.id);
     const cfg = await db.getGuildConfig(interaction.guild.id);
@@ -49,7 +51,7 @@ module.exports = {
     const emojiMatch = emojiInput.match(/^<a?:\w+:(\d+)>$/);
     const emojiKey = emojiMatch ? emojiMatch[1] : emojiInput;
 
-    await db.addReactionRole(interaction.guild.id, interaction.channel.id, messageId, emojiKey, role.id);
+    await db.addReactionRole(interaction.guild.id, interaction.channel.id, messageId, emojiKey, role.id, group || null);
     await interaction.reply({ content: `Reaction role added: ${emojiInput} → ${role}`, flags: MessageFlags.Ephemeral });
   },
 };

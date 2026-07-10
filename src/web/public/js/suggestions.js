@@ -39,10 +39,19 @@
 
   const config = await api(`/api/servers/${gid}/config`);
   await populateChannelSelect(document.getElementById('suggestions_channel'), gid, config.suggestions_channel);
+  document.getElementById('suggestions_auto_threshold_up').value = config.suggestions_auto_threshold_up || 0;
+  document.getElementById('suggestions_auto_threshold_down').value = config.suggestions_auto_threshold_down || 0;
   document.getElementById('save-channel').addEventListener('click', async () => {
     try {
-      await api(`/api/servers/${gid}/config`, { method: 'POST', body: { suggestions_channel: document.getElementById('suggestions_channel').value || null } });
-      toast('Suggestions channel saved.');
+      await api(`/api/servers/${gid}/config`, {
+        method: 'POST',
+        body: {
+          suggestions_channel: document.getElementById('suggestions_channel').value || null,
+          suggestions_auto_threshold_up: Number(document.getElementById('suggestions_auto_threshold_up').value) || 0,
+          suggestions_auto_threshold_down: Number(document.getElementById('suggestions_auto_threshold_down').value) || 0,
+        },
+      });
+      toast('Suggestions settings saved.');
     } catch (err) {
       toast(err.message, 'error');
     }

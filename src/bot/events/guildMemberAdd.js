@@ -34,7 +34,7 @@ module.exports = {
     const text = replacePlaceholders(cfg.welcome_message, { user: member.user, guild: member.guild });
     const embed = new EmbedBuilder()
       .setDescription(text)
-      .setColor(cfg.welcome_embed_color || config.brandColor)
+      .setColor(cfg.welcome_embed_color || (cfg.vip_active && cfg.vip_theme_color) || config.brandColor)
       .setThumbnail(member.user.displayAvatarURL())
       .setTimestamp(new Date());
 

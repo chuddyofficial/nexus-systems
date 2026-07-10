@@ -25,6 +25,23 @@
       </div>
 
       <div class="card">
+        <h2>🔍 User Lookup</h2>
+        <p class="card-desc">Search a Discord user ID for warnings, mod notes, and mod actions across every server the bot is in.</p>
+        <div class="row">
+          <div class="field" style="flex:1;"><input type="text" id="lookup-input" placeholder="Discord user ID" /></div>
+          <button class="btn btn-primary" style="flex:0 0 auto;" id="lookup-btn">Search</button>
+        </div>
+        <div id="lookup-results" style="display:none;margin-top:16px;">
+          <h3 style="font-size:13px;color:var(--text-muted);">Warnings</h3>
+          <table><thead><tr><th>Server</th><th>Reason</th><th>Date</th></tr></thead><tbody id="lookup-warnings"></tbody></table>
+          <h3 style="font-size:13px;color:var(--text-muted);margin-top:16px;">Mod Notes</h3>
+          <table><thead><tr><th>Server</th><th>Note</th><th>Date</th></tr></thead><tbody id="lookup-notes"></tbody></table>
+          <h3 style="font-size:13px;color:var(--text-muted);margin-top:16px;">Mod Actions</h3>
+          <table><thead><tr><th>Server</th><th>Action</th><th>Date</th></tr></thead><tbody id="lookup-actions"></tbody></table>
+        </div>
+      </div>
+
+      <div class="card">
         <h2>Quick Links</h2>
         <div class="cta" style="justify-content:flex-start;">
           <a class="btn btn-primary" href="/admin/servers">🌐 Manage All Servers</a>

@@ -61,6 +61,32 @@
           <div class="field"><label>Caps percentage trigger</label><input type="number" id="automod_caps_percent" min="10" max="100" /></div>
           <div class="field"><label>Minimum message length</label><input type="number" id="automod_caps_min_len" min="1" max="200" /></div>
         </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Anti-Link</div>
+            <div class="toggle-desc">Delete messages containing links, except whitelisted domains below.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_anti_link" /><span class="slider"></span></label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Repeated Characters</div>
+            <div class="toggle-desc">Delete messages with excessive character spam (e.g. "aaaaaaaa").</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_repeated_chars" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Max repeated characters in a row</label><input type="number" id="automod_repeated_chars_max" min="3" max="50" /></div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Emoji Spam</div>
+            <div class="toggle-desc">Delete messages with too many emojis.</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="automod_emoji_spam" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Max emojis per message</label><input type="number" id="automod_emoji_spam_max" min="1" max="100" /></div>
       </div>
 
       <div class="card">
@@ -71,6 +97,26 @@
           <button class="btn" id="add-banned-word" style="flex:0 0 auto;">Add</button>
         </div>
         <div class="tag-list" id="banned-words-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Banned Word Patterns (Regex)</h2>
+        <p class="card-desc">Advanced: JavaScript regular expressions, case-insensitive. For catching leetspeak/variants a plain word list can't.</p>
+        <div class="row">
+          <input type="text" id="regex-pattern-input" placeholder="e.g. b[a4]dw[o0]rd" />
+          <button class="btn" id="add-regex-pattern" style="flex:0 0 auto;">Add</button>
+        </div>
+        <div class="tag-list" id="regex-patterns-list"></div>
+      </div>
+
+      <div class="card">
+        <h2>Link Whitelist</h2>
+        <p class="card-desc">Domains allowed even when Anti-Link is on (e.g. <span class="mono">youtube.com</span>, subdomains included).</p>
+        <div class="row">
+          <input type="text" id="link-whitelist-input" placeholder="e.g. youtube.com" />
+          <button class="btn" id="add-link-whitelist" style="flex:0 0 auto;">Add</button>
+        </div>
+        <div class="tag-list" id="link-whitelist-list"></div>
       </div>
 
       <div class="card">

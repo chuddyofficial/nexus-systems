@@ -1,10 +1,40 @@
 (async function () {
   const gid = window.GUILD_ID;
+  let noXpChannels = [];
   try {
     const config = await api(`/api/servers/${gid}/config`);
     document.getElementById('leveling_enabled').checked = !!config.leveling_enabled;
     document.getElementById('leveling_announce_message').value = config.leveling_announce_message || '';
+    document.getElementById('leveling_xp_multiplier').value = config.leveling_xp_multiplier;
+    document.getElementById('vip-multiplier-note').style.display = config.vip_active ? 'inline' : 'none';
     await populateChannelSelect(document.getElementById('leveling_announce_channel'), gid, config.leveling_announce_channel);
+
+    const channels = await api(`/api/servers/${gid}/channels`);
+    const channelMap = Object.fromEntries(channels.map((c) => [c.id, c.name]));
+    noXpChannels = [...(config.leveling_no_xp_channels || [])];
+
+    function renderNoXpChannels() {
+      const list = document.getElementById('noxp-channels-list');
+      list.innerHTML = '';
+      for (const id of noXpChannels) {
+        list.appendChild(
+          el('div', { class: 'tag-chip' }, [
+            document.createTextNode('#' + (channelMap[id] || id)),
+            el('button', { onclick: () => { noXpChannels = noXpChannels.filter((x) => x !== id); renderNoXpChannels(); } }, '✕'),
+          ])
+        );
+      }
+    }
+    renderNoXpChannels();
+    await populateChannelSelect(document.getElementById('noxp-channel-select'), gid, null, false);
+
+    document.getElementById('add-noxp-channel').addEventListener('click', () => {
+      const select = document.getElementById('noxp-channel-select');
+      if (select.value && !noXpChannels.includes(select.value)) {
+        noXpChannels.push(select.value);
+        renderNoXpChannels();
+      }
+    });
 
     document.getElementById('save-btn').addEventListener('click', async () => {
       try {
@@ -14,6 +44,8 @@
             leveling_enabled: document.getElementById('leveling_enabled').checked,
             leveling_announce_channel: document.getElementById('leveling_announce_channel').value || null,
             leveling_announce_message: document.getElementById('leveling_announce_message').value,
+            leveling_xp_multiplier: Number(document.getElementById('leveling_xp_multiplier').value) || 100,
+            leveling_no_xp_channels: noXpChannels,
           },
         });
         toast('Leveling settings saved.');
@@ -74,6 +106,15 @@
             el('td', { class: 'mono' }, row.user_id),
             el('td', {}, el('span', { class: 'badge badge-brand' }, `Lv. ${row.level}`)),
             el('td', {}, String(row.xp)),
+            el('td', {}, el('button', {
+              class: 'btn btn-sm btn-danger',
+              onclick: async () => {
+                if (!(await confirmDialog(`Reset XP for ${row.user_id}?`))) return;
+                await api(`/api/servers/${gid}/leaderboard/${row.user_id}/reset`, { method: 'POST' });
+                toast('XP reset.');
+                document.querySelector(`#lb-body tr:nth-child(${i + 1})`)?.remove();
+              },
+            }, 'Reset')),
           ])
         );
       });

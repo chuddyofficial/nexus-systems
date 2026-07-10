@@ -8,10 +8,13 @@
     generate_vip_codes: '💎 Generated VIP Codes',
     grant_vip: '💎 Granted VIP',
     revoke_vip: '💎 Revoked VIP',
+    maintenance_mode: '🔧 Maintenance Mode',
   };
 
+  let entries = [];
+
   try {
-    const entries = await api('/api/admin/activity');
+    entries = await api('/api/admin/activity');
     const body = document.getElementById('activity-body');
     const emptyState = document.getElementById('activity-empty');
     body.innerHTML = '';
@@ -28,4 +31,14 @@
   } catch (err) {
     toast(err.message, 'error');
   }
+
+  document.getElementById('export-csv-btn').addEventListener('click', () => {
+    if (!entries.length) return toast('Nothing to export.', 'error');
+    downloadCsv('admin-activity.csv', entries, [
+      { key: 'created_at', label: 'When' },
+      { key: 'actor_id', label: 'Actor' },
+      { key: 'action', label: 'Action' },
+      { key: 'detail', label: 'Detail' },
+    ]);
+  });
 })();

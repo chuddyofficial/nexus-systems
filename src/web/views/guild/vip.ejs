@@ -25,9 +25,9 @@
       </div>
 
       <div class="card">
-        <h2>Perks</h2>
+        <h2>Perks &amp; Usage</h2>
         <table>
-          <thead><tr><th>Feature</th><th>Free</th><th>VIP</th></tr></thead>
+          <thead><tr><th>Feature</th><th>Used</th><th>Free Limit</th><th>VIP</th></tr></thead>
           <tbody id="perks-body"></tbody>
         </table>
       </div>
@@ -39,6 +39,20 @@
           <div class="field" style="flex:1;"><input type="text" id="nickname-input" maxlength="32" placeholder="e.g. Nexus" /></div>
           <button class="btn btn-primary" style="flex:0 0 auto;" id="nickname-btn">Set Nickname</button>
         </div>
+      </div>
+
+      <div class="card" id="theme-card">
+        <h2>Embed Theme Color <span id="theme-lock">🔒</span></h2>
+        <p class="card-desc">Used as the default color for welcome and level-up embeds when no other color is set — VIP only.</p>
+        <div class="row">
+          <div class="field" style="flex:0 0 auto;"><input type="color" id="theme-input" value="#5865f2" style="height:42px;width:80px;" /></div>
+          <button class="btn btn-primary" style="flex:0 0 auto;" id="theme-btn">Set Theme Color</button>
+        </div>
+      </div>
+
+      <div class="card" id="history-card" style="display:none;">
+        <h2>Redemption History</h2>
+        <p class="card-desc">Code: <span class="mono" id="history-code"></span> — granted <span id="history-date"></span></p>
       </div>
     </main>
   </div>

@@ -78,6 +78,26 @@ async function populateCategorySelect(selectEl, guildId, selectedValue, allowNon
   }
 }
 
+// ---------- CSV export ----------
+function downloadCsv(filename, rows, columns) {
+  const escapeCell = (v) => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = columns.map((c) => c.label).join(',');
+  const lines = rows.map((row) => columns.map((c) => escapeCell(row[c.key])).join(','));
+  const csv = [header, ...lines].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -274,6 +294,30 @@ async function initLockdownToggle(buttonEl, guildId) {
   });
 }
 
+// ---------- Keyboard shortcut help (press "?") ----------
+function showShortcutHelp(hasGuildNav) {
+  const rows = [
+    ['Ctrl/Cmd + K', 'Quick jump to any page'],
+    ['?', 'Show this help'],
+    ['Esc', 'Close any open dialog'],
+  ];
+  const overlay = ensureModalRoot();
+  const box = el('div', { class: 'modal-box' }, [
+    el('h3', {}, 'Keyboard Shortcuts'),
+    el('div', { style: 'display:flex;flex-direction:column;gap:8px;margin:12px 0;' }, rows.map(([key, desc]) =>
+      el('div', { style: 'display:flex;justify-content:space-between;gap:16px;' }, [
+        el('span', { class: 'mono', style: 'background:var(--bg-card);padding:2px 8px;border-radius:4px;' }, key),
+        el('span', { class: 'muted' }, desc),
+      ])
+    )),
+    el('div', { class: 'modal-actions' }, [el('button', { class: 'btn btn-primary', onclick: () => { overlay.classList.remove('open'); overlay.innerHTML = ''; } }, 'Close')]),
+  ]);
+  overlay.innerHTML = '';
+  overlay.appendChild(box);
+  overlay.classList.add('open');
+  overlay.onclick = (e) => { if (e.target === overlay) { overlay.classList.remove('open'); overlay.innerHTML = ''; } };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const themeBtn = document.getElementById('theme-toggle-btn');
   if (themeBtn) initThemeToggle(themeBtn);
@@ -286,4 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const lockdownBtn = document.getElementById('lockdown-toggle-btn');
     if (lockdownBtn) initLockdownToggle(lockdownBtn, window.GUILD_ID);
   }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '?' || e.ctrlKey || e.metaKey) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+    showShortcutHelp();
+  });
 });

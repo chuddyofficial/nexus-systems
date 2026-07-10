@@ -9,7 +9,7 @@ const { ensureGuildAccess, userManagesGuild, requirePermission, requireServerMan
 const { ensureOwnerApi } = require('../middleware/ensureOwner');
 const { buildEmbedFromData } = require('../../bot/utils/embedBuilder');
 const { performBan, performKick, performTimeout, performWarn, performTempBan } = require('../../bot/utils/modActions');
-const { endGiveawayNow } = require('../../bot/utils/giveaways');
+const { endGiveawayNow, rerollGiveaway } = require('../../bot/utils/giveaways');
 const { isSnowflake } = require('../utils/validate');
 
 const router = express.Router();
@@ -134,6 +134,12 @@ router.get('/servers/:guildId/warnings', async (req, res) => {
   res.json(await db.getAllWarnings(req.params.guildId));
 });
 
+router.get('/servers/:guildId/warnings/page', async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+  res.json(await db.getWarningsPage(req.params.guildId, limit, offset));
+});
+
 router.delete('/servers/:guildId/warnings/:id', requirePermission('manage_moderation'), async (req, res) => {
   await db.deleteWarning(req.params.guildId, req.params.id);
   res.json({ ok: true });
@@ -142,6 +148,12 @@ router.delete('/servers/:guildId/warnings/:id', requirePermission('manage_modera
 // ---- Mod log ----
 router.get('/servers/:guildId/modlog', async (req, res) => {
   res.json(await db.getModActions(req.params.guildId, 200));
+});
+
+router.get('/servers/:guildId/modlog/page', async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, 200);
+  const offset = Number(req.query.offset) || 0;
+  res.json(await db.getModActionsPage(req.params.guildId, limit, offset));
 });
 
 // ---- Moderation actions from dashboard ----
@@ -231,12 +243,12 @@ router.get('/servers/:guildId/customcommands', async (req, res) => {
 });
 
 router.post('/servers/:guildId/customcommands', requirePermission('manage_customcommands'), async (req, res) => {
-  const { trigger, response } = req.body;
+  const { trigger, response, cooldownSeconds } = req.body;
   if (!trigger) return res.status(400).json({ error: 'trigger is required' });
   const existing = await db.getCustomCommands(req.params.guildId);
   const isNew = !existing.some((c) => c.trigger.toLowerCase() === trigger.toLowerCase());
   if (isNew && !(await checkVipLimit(req.params.guildId, res, 'customCommands', existing.length))) return;
-  const saved = await db.upsertCustomCommand(req.params.guildId, trigger, response, null);
+  const saved = await db.upsertCustomCommand(req.params.guildId, trigger, response, null, Number(cooldownSeconds) || 0);
   res.json(saved);
 });
 
@@ -286,6 +298,11 @@ router.post('/servers/:guildId/embeds/send', requirePermission('manage_embeds'),
 // ---- Leveling ----
 router.get('/servers/:guildId/leaderboard', async (req, res) => {
   res.json(await db.getLeaderboard(req.params.guildId, 50));
+});
+
+router.post('/servers/:guildId/leaderboard/:userId/reset', requirePermission('manage_config'), async (req, res) => {
+  await db.resetXp(req.params.guildId, req.params.userId);
+  res.json({ ok: true });
 });
 
 // ---- Moderator notes ----
@@ -396,14 +413,19 @@ router.get('/servers/:guildId/giveaways', async (req, res) => {
 });
 
 router.post('/servers/:guildId/giveaways', requirePermission('manage_giveaways'), async (req, res) => {
-  const { channelId, prize, winnerCount, durationMs } = req.body;
+  const { channelId, prize, winnerCount, durationMs, requiredRoleId, minLevel } = req.body;
   const channel = req.botGuild.channels.cache.get(channelId);
   if (!channel?.isTextBased()) return res.status(400).json({ error: 'Invalid channel' });
   try {
     const endsAt = new Date(Date.now() + Number(durationMs));
+    const requirementLines = [];
+    if (requiredRoleId) requirementLines.push(`Requires role: <@&${requiredRoleId}>`);
+    if (minLevel) requirementLines.push(`Requires level ${minLevel}+`);
     const embed = new EmbedBuilder()
       .setTitle('🎉 Giveaway!')
-      .setDescription(`**Prize:** ${prize}\nReact with 🎉 to enter!\n**Winners:** ${winnerCount || 1}\n**Ends:** <t:${Math.floor(endsAt.getTime() / 1000)}:R>`)
+      .setDescription(
+        `**Prize:** ${prize}\nReact with 🎉 to enter!\n**Winners:** ${winnerCount || 1}\n**Ends:** <t:${Math.floor(endsAt.getTime() / 1000)}:R>${requirementLines.length ? `\n${requirementLines.join('\n')}` : ''}`
+      )
       .setColor(config.brandColor)
       .setFooter({ text: `Hosted by ${req.user.username}` });
     const message = await channel.send({ embeds: [embed] });
@@ -415,7 +437,9 @@ router.post('/servers/:guildId/giveaways', requirePermission('manage_giveaways')
       prize,
       winnerCount || 1,
       req.user.id,
-      endsAt.toISOString().replace('T', ' ').slice(0, 19)
+      endsAt.toISOString().replace('T', ' ').slice(0, 19),
+      requiredRoleId || null,
+      Number(minLevel) || 0
     );
     res.json(saved);
   } catch (err) {
@@ -631,13 +655,31 @@ router.post('/servers/:guildId/verify/setup', requirePermission('manage_config')
 
 // ---- VIP status & perks (guild-scoped) ----
 router.get('/servers/:guildId/vip', async (req, res) => {
-  const cfg = await db.getGuildConfig(req.params.guildId);
+  const guildId = req.params.guildId;
+  const cfg = await db.getGuildConfig(guildId);
+  const [panels, commands, embeds, levelRoles, reactionRoles] = await Promise.all([
+    db.getTicketPanels(guildId),
+    db.getCustomCommands(guildId),
+    db.getSavedEmbeds(guildId),
+    db.getLevelRoles(guildId),
+    db.getReactionRoles(guildId),
+  ]);
   res.json({
     active: cfg.vip_active,
     tier: cfg.vip_tier,
     expiresAt: cfg.vip_expires_at,
     nickname: cfg.vip_nickname,
+    themeColor: cfg.vip_theme_color,
+    code: cfg.vip_code,
+    grantedAt: cfg.vip_granted_at,
     limits: Object.fromEntries(Object.entries(FREE_LIMITS).map(([k, v]) => [k, v.max])),
+    usage: {
+      ticketPanels: panels.length,
+      customCommands: commands.length,
+      savedEmbeds: embeds.length,
+      levelRoles: levelRoles.length,
+      reactionRoles: reactionRoles.length,
+    },
   });
 });
 
@@ -698,6 +740,15 @@ router.post('/servers/:guildId/giveaways/:id/end', requirePermission('manage_giv
   }
 });
 
+router.post('/servers/:guildId/giveaways/:id/reroll', requirePermission('manage_giveaways'), async (req, res) => {
+  try {
+    const winners = await rerollGiveaway(req.app.locals.discordClient, req.params.guildId, req.params.id);
+    res.json({ ok: true, winnerCount: winners.length });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // ---- Website Admin (owner-only, site-wide bot control) ----
 router.use('/admin', ensureOwnerApi);
 
@@ -712,9 +763,71 @@ router.get('/admin/stats', (req, res) => {
     totalMembers: guilds.reduce((sum, g) => sum + (g.memberCount || 0), 0),
     uptimeMs: client.uptime ?? 0,
     nodeVersion: process.version,
+    botVersion: require('../../../package.json').version,
     memory: process.memoryUsage(),
     pid: process.pid,
   });
+});
+
+router.get('/admin/servers/:guildId/detail', async (req, res) => {
+  const client = req.app.locals.discordClient;
+  const guild = client.guilds.cache.get(req.params.guildId);
+  if (!guild) return res.status(404).json({ error: 'Server not found' });
+  const [cfg, warnings, tickets, modActions] = await Promise.all([
+    db.getGuildConfig(req.params.guildId),
+    db.getAllWarnings(req.params.guildId),
+    db.getAllTickets(req.params.guildId, 500),
+    db.getModActions(req.params.guildId, 500),
+  ]);
+  res.json({
+    id: guild.id,
+    name: guild.name,
+    memberCount: guild.memberCount,
+    ownerId: guild.ownerId,
+    createdAt: guild.createdAt.toISOString(),
+    vipActive: cfg.vip_active,
+    vipTier: cfg.vip_tier,
+    warningCount: warnings.length,
+    ticketCount: tickets.length,
+    openTicketCount: tickets.filter((t) => t.status === 'open').length,
+    modActionCount: modActions.length,
+    automodEnabled: cfg.automod_enabled,
+    antiraidEnabled: cfg.antiraid_enabled,
+    antinukeEnabled: cfg.antinuke_enabled,
+  });
+});
+
+// Cross-guild — searches by Discord user ID across every server's warnings
+// and mod notes (see the multi-tenant isolation exception documented for
+// this owner-only tool).
+router.get('/admin/lookup/:userId', async (req, res) => {
+  const client = req.app.locals.discordClient;
+  const [warnings, notes, modActions] = await Promise.all([
+    db.getWarningsForUser(req.params.userId),
+    db.getModNotesForUser(req.params.userId),
+    db.getModActionsForUser(req.params.userId),
+  ]);
+  const withGuildName = (rows) => rows.map((r) => ({ ...r, guildName: client.guilds.cache.get(r.guild_id)?.name || r.guild_id }));
+  res.json({
+    warnings: withGuildName(warnings),
+    notes: withGuildName(notes),
+    modActions: withGuildName(modActions),
+  });
+});
+
+router.get('/admin/maintenance', async (req, res) => {
+  res.json({
+    enabled: (await db.getSiteSetting('maintenance_mode')) === '1',
+    message: (await db.getSiteSetting('maintenance_message')) || '',
+  });
+});
+
+router.post('/admin/maintenance', async (req, res) => {
+  const { enabled, message } = req.body;
+  await db.setSiteSetting('maintenance_mode', enabled ? '1' : '0');
+  await db.setSiteSetting('maintenance_message', message || '');
+  await db.logAdminAction(req.user.id, 'maintenance_mode', enabled ? `Enabled: ${message || ''}` : 'Disabled');
+  res.json({ ok: true });
 });
 
 router.get('/admin/servers', async (req, res) => {
@@ -832,7 +945,7 @@ router.get('/admin/vip/codes', async (req, res) => {
 
 router.post('/admin/vip/codes', async (req, res) => {
   const { duration, quantity, note } = req.body;
-  if (!['year', 'lifetime'].includes(duration)) return res.status(400).json({ error: 'duration must be "year" or "lifetime"' });
+  if (!['month', 'year', 'lifetime'].includes(duration)) return res.status(400).json({ error: 'duration must be "month", "year", or "lifetime"' });
   const qty = Math.min(Math.max(Number(quantity) || 1, 1), 50);
   const codes = await db.generateVipCodes(req.user.id, duration, qty, note || null);
   await db.logAdminAction(req.user.id, 'generate_vip_codes', `${codes.length}x ${duration}${note ? ` — ${note}` : ''}`);
@@ -862,13 +975,8 @@ router.post('/admin/vip/grant', async (req, res) => {
   const client = req.app.locals.discordClient;
   const guild = client.guilds.cache.get(guildId);
   if (!guild) return res.status(400).json({ error: 'Invalid server' });
-  if (!['year', 'lifetime'].includes(tier)) return res.status(400).json({ error: 'tier must be "year" or "lifetime"' });
-  const expiresAt = tier === 'lifetime' ? null : (() => {
-    const d = new Date();
-    d.setUTCFullYear(d.getUTCFullYear() + 1);
-    return d.toISOString().slice(0, 19).replace('T', ' ');
-  })();
-  const cfg = await db.grantVip(guildId, tier, expiresAt, null);
+  if (!['month', 'year', 'lifetime'].includes(tier)) return res.status(400).json({ error: 'tier must be "month", "year", or "lifetime"' });
+  const cfg = await db.grantVip(guildId, tier, db.vipExpiryFor(tier), null);
   await db.logAdminAction(req.user.id, 'grant_vip', `Manually granted ${tier} VIP to "${guild.name}" (${guildId})`);
   res.json(cfg);
 });

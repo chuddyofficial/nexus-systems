@@ -1,5 +1,20 @@
 (async function () {
   const gid = window.GUILD_ID;
+  let antinukeBypass = [];
+
+  function renderAntinukeBypass() {
+    const list = document.getElementById('antinuke-bypass-list');
+    list.innerHTML = '';
+    for (const id of antinukeBypass) {
+      list.appendChild(
+        el('div', { class: 'tag-chip' }, [
+          document.createTextNode(id),
+          el('button', { onclick: () => { antinukeBypass = antinukeBypass.filter((x) => x !== id); renderAntinukeBypass(); } }, '✕'),
+        ])
+      );
+    }
+  }
+
   try {
     const config = await api(`/api/servers/${gid}/config`);
 
@@ -16,6 +31,20 @@
     document.getElementById('antinuke_threshold').value = config.antinuke_threshold;
     document.getElementById('antinuke_window').value = config.antinuke_window;
     document.getElementById('antinuke_punishment').value = config.antinuke_punishment;
+    antinukeBypass = [...(config.antinuke_bypass_ids || [])];
+    renderAntinukeBypass();
+
+    document.getElementById('add-antinuke-bypass').addEventListener('click', () => {
+      const input = document.getElementById('antinuke-bypass-input');
+      const val = input.value.trim();
+      if (/^\d{15,21}$/.test(val) && !antinukeBypass.includes(val)) {
+        antinukeBypass.push(val);
+        renderAntinukeBypass();
+      } else if (val) {
+        toast('Enter a valid Discord role or user ID.', 'error');
+      }
+      input.value = '';
+    });
 
     document.getElementById('save-autorole').addEventListener('click', async () => {
       try {
@@ -64,6 +93,7 @@
             antinuke_threshold: Number(document.getElementById('antinuke_threshold').value),
             antinuke_window: Number(document.getElementById('antinuke_window').value),
             antinuke_punishment: document.getElementById('antinuke_punishment').value,
+            antinuke_bypass_ids: antinukeBypass,
           },
         });
         toast('Anti-nuke settings saved.');

@@ -13,13 +13,17 @@ function xpForLevel(level) {
 async function awardMessageXp(message) {
   const cfg = await db.getGuildConfig(message.guild.id);
   if (!cfg.leveling_enabled) return;
+  if (cfg.leveling_no_xp_channels.includes(message.channel.id)) return;
 
   const key = `${message.guild.id}:${message.author.id}`;
   const now = Date.now();
   if (now - (lastAward.get(key) ?? 0) < XP_COOLDOWN_MS) return;
   lastAward.set(key, now);
 
-  const amount = 15 + Math.floor(Math.random() * 11); // 15-25
+  const base = 15 + Math.floor(Math.random() * 11); // 15-25
+  // VIP servers get an automatic 2x on top of whatever multiplier is configured.
+  const multiplier = (cfg.leveling_xp_multiplier / 100) * (cfg.vip_active ? 2 : 1);
+  const amount = Math.max(1, Math.round(base * multiplier));
   const result = await db.addXp(message.guild.id, message.author.id, amount);
 
   if (result.leveledUp && cfg.leveling_announce_channel) {
@@ -37,7 +41,7 @@ async function awardMessageXp(message) {
         embeds: [
           new EmbedBuilder()
             .setDescription(`GG ${message.author}, you just reached **level ${result.level}**!`)
-            .setColor(config.brandColor),
+            .setColor((cfg.vip_active && cfg.vip_theme_color) || config.brandColor),
         ],
       })
       .catch(() => {});

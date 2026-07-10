@@ -10,11 +10,19 @@
         <p>All warnings issued in <strong><%= guild.name %></strong>.</p>
       </div>
       <div class="card">
+        <div class="row">
+          <div class="field" style="flex:1;"><input type="text" id="warnings-search" placeholder="Filter by user ID or reason..." /></div>
+          <button class="btn" id="warnings-export" style="flex:0 0 auto;">⬇️ Export CSV</button>
+        </div>
+      </div>
+
+      <div class="card">
         <table>
           <thead><tr><th>ID</th><th>User</th><th>Moderator</th><th>Reason</th><th>When</th><th></th></tr></thead>
           <tbody id="warnings-body"></tbody>
         </table>
         <div id="warnings-empty" class="empty-state" style="display:none;">No warnings yet.</div>
+        <button class="btn" id="warnings-load-more" style="display:none;margin-top:14px;">Load More</button>
       </div>
     </main>
   </div>

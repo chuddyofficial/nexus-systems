@@ -5,6 +5,8 @@ const { sendMessageLog } = require('../utils/logger');
 const recentMessages = new Map();
 
 const INVITE_REGEX = /(discord\.gg|discord(?:app)?\.com\/invite|dsc\.gg)\/[a-z0-9-]+/i;
+const URL_REGEX = /https?:\/\/([a-z0-9-]+\.)+[a-z]{2,}(\/\S*)?/gi;
+const EMOJI_REGEX = /<a?:\w+:\d+>|\p{Extended_Pictographic}/gu;
 
 function checkCaps(content, minLen, percent) {
   if (content.length < minLen) return false;
@@ -18,6 +20,45 @@ function checkBannedWords(content, words) {
   if (!words?.length) return null;
   const lower = content.toLowerCase();
   return words.find((w) => w && lower.includes(w.toLowerCase())) ?? null;
+}
+
+function checkRegexPatterns(content, patterns) {
+  if (!patterns?.length) return null;
+  for (const pattern of patterns) {
+    try {
+      if (new RegExp(pattern, 'i').test(content)) return pattern;
+    } catch {
+      // Invalid regex saved by a user — skip rather than crash automod.
+    }
+  }
+  return null;
+}
+
+function checkLinks(content, whitelist) {
+  const matches = content.match(URL_REGEX);
+  if (!matches) return null;
+  for (const url of matches) {
+    let host;
+    try {
+      host = new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      continue;
+    }
+    if (whitelist?.some((w) => host === w || host.endsWith(`.${w}`))) continue;
+    return url;
+  }
+  return null;
+}
+
+function checkRepeatedChars(content, max) {
+  const match = content.match(/(.)\1{2,}/g);
+  if (!match) return false;
+  return match.some((run) => run.length >= max);
+}
+
+function checkEmojiSpam(content, max) {
+  const matches = content.match(EMOJI_REGEX);
+  return !!matches && matches.length > max;
 }
 
 function checkSpam(guildId, userId, threshold, intervalMs) {
@@ -48,13 +89,31 @@ async function runAutomod(message) {
     violation = 'Posting a Discord invite link';
   }
 
+  if (!violation && cfg.automod_anti_link) {
+    const hit = checkLinks(message.content, cfg.automod_link_whitelist);
+    if (hit) violation = 'Posting a link that is not on the whitelist';
+  }
+
   if (!violation && cfg.automod_banned_words.length) {
     const hit = checkBannedWords(message.content, cfg.automod_banned_words);
     if (hit) violation = `Using a banned word ("${hit}")`;
   }
 
+  if (!violation && cfg.automod_word_regex_patterns.length) {
+    const hit = checkRegexPatterns(message.content, cfg.automod_word_regex_patterns);
+    if (hit) violation = 'Matching a banned pattern';
+  }
+
   if (!violation && cfg.automod_caps_filter && checkCaps(message.content, cfg.automod_caps_min_len, cfg.automod_caps_percent)) {
     violation = 'Excessive caps';
+  }
+
+  if (!violation && cfg.automod_repeated_chars && checkRepeatedChars(message.content, cfg.automod_repeated_chars_max)) {
+    violation = 'Excessive repeated characters';
+  }
+
+  if (!violation && cfg.automod_emoji_spam && checkEmojiSpam(message.content, cfg.automod_emoji_spam_max)) {
+    violation = 'Excessive emoji spam';
   }
 
   if (!violation && cfg.automod_anti_mass_mention) {

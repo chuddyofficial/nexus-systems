@@ -15,6 +15,12 @@
     </nav>
   </div>
 
+  <% if (maintenanceEnabled) { %>
+    <div style="background:rgba(237,66,69,0.15);border-bottom:1px solid rgba(237,66,69,0.4);color:var(--red);text-align:center;padding:10px 20px;font-size:14px;">
+      🔧 <strong>Maintenance:</strong> <%= maintenanceMessage || 'Some features may be temporarily unavailable.' %>
+    </div>
+  <% } %>
+
   <div class="hero">
     <div class="status-pill" style="margin: 0 auto 22px auto;">
       <span class="dot live"></span> Online — protecting <strong>&nbsp;<%= guildCount %></strong>&nbsp;server<%= guildCount === 1 ? '' : 's' %> right now

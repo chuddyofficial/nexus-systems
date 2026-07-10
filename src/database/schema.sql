@@ -270,6 +270,55 @@ ALTER TABLE guild_config ADD COLUMN vip_expires_at DATETIME NULL;
 ALTER TABLE guild_config ADD COLUMN vip_code VARCHAR(32);
 ALTER TABLE guild_config ADD COLUMN vip_granted_at DATETIME NULL;
 ALTER TABLE guild_config ADD COLUMN vip_nickname VARCHAR(32);
+ALTER TABLE guild_config ADD COLUMN vip_theme_color VARCHAR(16);
+
+ALTER TABLE guild_config ADD COLUMN automod_anti_link TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN automod_link_whitelist TEXT;
+ALTER TABLE guild_config ADD COLUMN automod_word_regex_patterns TEXT;
+ALTER TABLE guild_config ADD COLUMN automod_repeated_chars TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN automod_repeated_chars_max INT NOT NULL DEFAULT 8;
+ALTER TABLE guild_config ADD COLUMN automod_emoji_spam TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN automod_emoji_spam_max INT NOT NULL DEFAULT 10;
+
+ALTER TABLE guild_config ADD COLUMN warn_escalation_enabled TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN warn_escalation_threshold INT NOT NULL DEFAULT 3;
+ALTER TABLE guild_config ADD COLUMN warn_escalation_action VARCHAR(16) NOT NULL DEFAULT 'timeout';
+ALTER TABLE guild_config ADD COLUMN warn_escalation_timeout_minutes INT NOT NULL DEFAULT 60;
+
+ALTER TABLE guild_config ADD COLUMN leveling_no_xp_channels TEXT;
+ALTER TABLE guild_config ADD COLUMN leveling_xp_multiplier INT NOT NULL DEFAULT 100;
+
+ALTER TABLE guild_config ADD COLUMN starboard_exclude_self TINYINT(1) NOT NULL DEFAULT 0;
+
+ALTER TABLE guild_config ADD COLUMN suggestions_auto_threshold_up INT NOT NULL DEFAULT 0;
+ALTER TABLE guild_config ADD COLUMN suggestions_auto_threshold_down INT NOT NULL DEFAULT 0;
+
+ALTER TABLE guild_config ADD COLUMN antinuke_bypass_ids TEXT;
+
+ALTER TABLE guild_config ADD COLUMN member_update_log_channel VARCHAR(32);
+
+ALTER TABLE giveaways ADD COLUMN required_role_id VARCHAR(32);
+ALTER TABLE giveaways ADD COLUMN min_level INT NOT NULL DEFAULT 0;
+
+ALTER TABLE reaction_roles ADD COLUMN exclusive_group VARCHAR(64);
+
+ALTER TABLE custom_commands ADD COLUMN cooldown_seconds INT NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS site_settings (
+  setting_key VARCHAR(64) PRIMARY KEY,
+  setting_value VARCHAR(1000)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS reminders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  guild_id VARCHAR(32),
+  user_id VARCHAR(32) NOT NULL,
+  channel_id VARCHAR(32) NOT NULL,
+  message VARCHAR(1000) NOT NULL,
+  remind_at DATETIME NOT NULL,
+  fulfilled TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS vip_codes (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -307,3 +356,6 @@ CREATE INDEX idx_ticketpanels_guild ON ticket_panels(guild_id);
 CREATE INDEX idx_ticketpaneloptions_panel ON ticket_panel_options(panel_id);
 CREATE INDEX idx_vipcodes_redeemed_guild ON vip_codes(redeemed_guild_id);
 CREATE INDEX idx_adminauditlog_created ON admin_audit_log(created_at);
+CREATE INDEX idx_reminders_due ON reminders(fulfilled, remind_at);
+CREATE INDEX idx_warnings_user ON warnings(user_id);
+CREATE INDEX idx_modnotes_user ON mod_notes(user_id);

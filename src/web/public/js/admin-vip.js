@@ -38,7 +38,7 @@
         body.appendChild(
           el('tr', {}, [
             el('td', {}, s.name),
-            el('td', {}, s.tier === 'lifetime' ? '💎 Lifetime' : '⭐ Year'),
+            el('td', {}, { lifetime: '💎 Lifetime', year: '⭐ Year', month: '🌙 Month' }[s.tier] || s.tier),
             el('td', { class: 'muted' }, s.tier === 'lifetime' ? '—' : formatDate(s.expiresAt)),
           ])
         );
@@ -60,7 +60,7 @@
         body.appendChild(
           el('tr', {}, [
             el('td', { class: 'mono' }, c.code),
-            el('td', {}, c.duration === 'lifetime' ? 'Lifetime' : '1 Year'),
+            el('td', {}, { lifetime: 'Lifetime', year: '1 Year', month: '1 Month' }[c.duration] || c.duration),
             el('td', {}, el('span', { class: `badge ${c.redeemed_guild_id ? 'badge-red' : 'badge-green'}` }, status)),
             el('td', { class: 'muted' }, c.note || '—'),
             el('td', {}, c.redeemed_guild_id ? null : el('button', {

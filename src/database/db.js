@@ -33,14 +33,19 @@ const CONFIG_COLUMNS = [
   'prefix', 'autorole_id',
   'antiraid_enabled', 'antiraid_join_threshold', 'antiraid_join_window', 'antiraid_action',
   'antiraid_min_account_age_days', 'antiraid_alert_channel', 'antiraid_lockdown_active',
-  'antinuke_enabled', 'antinuke_threshold', 'antinuke_window', 'antinuke_punishment',
-  'vip_nickname',
+  'antinuke_enabled', 'antinuke_threshold', 'antinuke_window', 'antinuke_punishment', 'antinuke_bypass_ids',
+  'vip_nickname', 'vip_theme_color',
+  'automod_anti_link', 'automod_link_whitelist', 'automod_word_regex_patterns',
+  'automod_repeated_chars', 'automod_repeated_chars_max', 'automod_emoji_spam', 'automod_emoji_spam_max',
+  'warn_escalation_enabled', 'warn_escalation_threshold', 'warn_escalation_action', 'warn_escalation_timeout_minutes',
   'leveling_enabled', 'leveling_announce_channel', 'leveling_announce_message',
-  'starboard_enabled', 'starboard_channel', 'starboard_emoji', 'starboard_threshold',
+  'leveling_no_xp_channels', 'leveling_xp_multiplier',
+  'starboard_enabled', 'starboard_channel', 'starboard_emoji', 'starboard_threshold', 'starboard_exclude_self',
   'ticket_category_id', 'ticket_support_role_id', 'ticket_panel_channel', 'ticket_panel_message',
   'ticket_transcript_channel', 'ticket_auto_close_hours',
-  'suggestions_channel',
+  'suggestions_channel', 'suggestions_auto_threshold_up', 'suggestions_auto_threshold_down',
   'verify_enabled', 'verify_role_id', 'verify_channel_id', 'verify_message', 'verify_panel_message',
+  'member_update_log_channel',
 ];
 
 const BOOLEAN_COLUMNS = new Set([
@@ -48,6 +53,8 @@ const BOOLEAN_COLUMNS = new Set([
   'automod_anti_spam', 'automod_anti_mass_mention', 'automod_caps_filter',
   'antiraid_enabled', 'leveling_enabled', 'starboard_enabled', 'verify_enabled',
   'antiraid_lockdown_active', 'antinuke_enabled',
+  'automod_anti_link', 'automod_repeated_chars', 'automod_emoji_spam',
+  'warn_escalation_enabled', 'starboard_exclude_self',
 ]);
 
 // Ticket panels: patchable columns for updateTicketPanel (mirrors ticket_panels
@@ -58,7 +65,10 @@ const TICKET_PANEL_COLUMNS = [
   'category_channel_id', 'support_role_id', 'transcript_channel_id',
 ];
 
-const JSON_COLUMNS = new Set(['automod_banned_words', 'automod_ignored_channels']);
+const JSON_COLUMNS = new Set([
+  'automod_banned_words', 'automod_ignored_channels', 'automod_link_whitelist',
+  'automod_word_regex_patterns', 'leveling_no_xp_channels', 'antinuke_bypass_ids',
+]);
 
 async function initDb() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
@@ -97,6 +107,10 @@ function normalizeConfig(row) {
   for (const col of BOOLEAN_COLUMNS) out[col] = !!out[col];
   out.automod_banned_words = safeJsonParse(row.automod_banned_words, []);
   out.automod_ignored_channels = safeJsonParse(row.automod_ignored_channels, []);
+  out.automod_link_whitelist = safeJsonParse(row.automod_link_whitelist, []);
+  out.automod_word_regex_patterns = safeJsonParse(row.automod_word_regex_patterns, []);
+  out.leveling_no_xp_channels = safeJsonParse(row.leveling_no_xp_channels, []);
+  out.antinuke_bypass_ids = safeJsonParse(row.antinuke_bypass_ids, []);
   // Computed rather than a stored flag: a "year" VIP naturally lapses once
   // vip_expires_at passes, with no scheduler sweep needed to keep this
   // accurate — "lifetime" never expires (vip_expires_at stays NULL for it).
@@ -166,6 +180,29 @@ async function getAllWarnings(guildId) {
   return rows;
 }
 
+async function getWarningsPage(guildId, limit = 50, offset = 0) {
+  const [rows] = await pool.query('SELECT * FROM warnings WHERE guild_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [
+    guildId,
+    limit,
+    offset,
+  ]);
+  const [[{ total }]] = await pool.execute('SELECT COUNT(*) AS total FROM warnings WHERE guild_id = ?', [guildId]);
+  return { rows, total };
+}
+
+// Cross-guild lookups — owner-only user-lookup tool in the website admin
+// panel intentionally has no guild_id filter; see the multi-tenant
+// isolation note in db.js's module docs / memory for why this is safe.
+async function getWarningsForUser(userId) {
+  const [rows] = await pool.execute('SELECT * FROM warnings WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+  return rows;
+}
+
+async function getModNotesForUser(userId) {
+  const [rows] = await pool.execute('SELECT * FROM mod_notes WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+  return rows;
+}
+
 async function clearWarnings(guildId, userId) {
   const [result] = await pool.execute('DELETE FROM warnings WHERE guild_id = ? AND user_id = ?', [guildId, userId]);
   return { changes: result.affectedRows };
@@ -194,11 +231,26 @@ async function getModActions(guildId, limit = 100) {
   return rows;
 }
 
+async function getModActionsPage(guildId, limit = 50, offset = 0) {
+  const [rows] = await pool.query('SELECT * FROM mod_actions WHERE guild_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', [
+    guildId,
+    limit,
+    offset,
+  ]);
+  const [[{ total }]] = await pool.execute('SELECT COUNT(*) AS total FROM mod_actions WHERE guild_id = ?', [guildId]);
+  return { rows, total };
+}
+
+async function getModActionsForUser(userId) {
+  const [rows] = await pool.execute('SELECT * FROM mod_actions WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+  return rows;
+}
+
 // Reaction roles
-async function addReactionRole(guildId, channelId, messageId, emoji, roleId) {
+async function addReactionRole(guildId, channelId, messageId, emoji, roleId, exclusiveGroup = null) {
   const [result] = await pool.execute(
-    'INSERT INTO reaction_roles (guild_id, channel_id, message_id, emoji, role_id) VALUES (?, ?, ?, ?, ?)',
-    [guildId, channelId, messageId, emoji, roleId]
+    'INSERT INTO reaction_roles (guild_id, channel_id, message_id, emoji, role_id, exclusive_group) VALUES (?, ?, ?, ?, ?, ?)',
+    [guildId, channelId, messageId, emoji, roleId, exclusiveGroup || null]
   );
   const [rows] = await pool.execute('SELECT * FROM reaction_roles WHERE id = ?', [result.insertId]);
   return rows[0];
@@ -206,6 +258,14 @@ async function addReactionRole(guildId, channelId, messageId, emoji, roleId) {
 
 async function getReactionRoles(guildId) {
   const [rows] = await pool.execute('SELECT * FROM reaction_roles WHERE guild_id = ?', [guildId]);
+  return rows;
+}
+
+async function getReactionRolesByGroup(guildId, messageId, exclusiveGroup) {
+  const [rows] = await pool.execute(
+    'SELECT * FROM reaction_roles WHERE guild_id = ? AND message_id = ? AND exclusive_group = ?',
+    [guildId, messageId, exclusiveGroup]
+  );
   return rows;
 }
 
@@ -233,12 +293,12 @@ async function getCustomCommand(guildId, trigger) {
   return rows[0] ? { ...rows[0], trigger: rows[0].trigger_word } : undefined;
 }
 
-async function upsertCustomCommand(guildId, trigger, response, embedJson) {
+async function upsertCustomCommand(guildId, trigger, response, embedJson, cooldownSeconds = 0) {
   await pool.execute(
-    `INSERT INTO custom_commands (guild_id, trigger_word, response, embed_json)
-     VALUES (?, ?, ?, ?)
-     ON DUPLICATE KEY UPDATE response = VALUES(response), embed_json = VALUES(embed_json)`,
-    [guildId, trigger.toLowerCase(), response || null, embedJson || null]
+    `INSERT INTO custom_commands (guild_id, trigger_word, response, embed_json, cooldown_seconds)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE response = VALUES(response), embed_json = VALUES(embed_json), cooldown_seconds = VALUES(cooldown_seconds)`,
+    [guildId, trigger.toLowerCase(), response || null, embedJson || null, cooldownSeconds || 0]
   );
   return getCustomCommand(guildId, trigger);
 }
@@ -301,6 +361,10 @@ async function getLeaderboard(guildId, limit = 10) {
 async function getRank(guildId, userId) {
   const [rows] = await pool.execute('SELECT user_id FROM levels WHERE guild_id = ? ORDER BY xp DESC', [guildId]);
   return rows.findIndex((r) => r.user_id === userId) + 1;
+}
+
+async function resetXp(guildId, userId) {
+  await pool.execute('UPDATE levels SET xp = 0, level = 0 WHERE guild_id = ? AND user_id = ?', [guildId, userId]);
 }
 
 // Starboard
@@ -455,10 +519,10 @@ async function getPanelOptions(panelId) {
 }
 
 // Giveaways
-async function createGiveaway(guildId, channelId, messageId, prize, winnerCount, hostId, endsAt) {
+async function createGiveaway(guildId, channelId, messageId, prize, winnerCount, hostId, endsAt, requiredRoleId = null, minLevel = 0) {
   const [result] = await pool.execute(
-    'INSERT INTO giveaways (guild_id, channel_id, message_id, prize, winner_count, host_id, ends_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-    [guildId, channelId, messageId, prize, winnerCount, hostId, endsAt]
+    'INSERT INTO giveaways (guild_id, channel_id, message_id, prize, winner_count, host_id, ends_at, required_role_id, min_level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [guildId, channelId, messageId, prize, winnerCount, hostId, endsAt, requiredRoleId, minLevel || 0]
   );
   const [rows] = await pool.execute('SELECT * FROM giveaways WHERE id = ?', [result.insertId]);
   return rows[0];
@@ -510,6 +574,11 @@ async function setSuggestionStatus(guildId, id, status) {
 
 async function getSuggestionById(guildId, id) {
   const [rows] = await pool.execute('SELECT * FROM suggestions WHERE guild_id = ? AND id = ?', [guildId, id]);
+  return rows[0];
+}
+
+async function getSuggestionByMessage(messageId) {
+  const [rows] = await pool.execute('SELECT * FROM suggestions WHERE message_id = ?', [messageId]);
   return rows[0];
 }
 
@@ -704,6 +773,38 @@ async function deleteLevelRole(guildId, id) {
   await pool.execute('DELETE FROM level_roles WHERE guild_id = ? AND id = ?', [guildId, id]);
 }
 
+// ---- Reminders (/remindme) ----
+async function addReminder(guildId, userId, channelId, message, remindAt) {
+  const [result] = await pool.execute(
+    'INSERT INTO reminders (guild_id, user_id, channel_id, message, remind_at) VALUES (?, ?, ?, ?, ?)',
+    [guildId, userId, channelId, message, remindAt]
+  );
+  const [rows] = await pool.execute('SELECT * FROM reminders WHERE id = ?', [result.insertId]);
+  return rows[0];
+}
+
+async function getDueReminders() {
+  const [rows] = await pool.execute('SELECT * FROM reminders WHERE fulfilled = 0 AND remind_at <= UTC_TIMESTAMP()');
+  return rows;
+}
+
+async function markReminderFulfilled(id) {
+  await pool.execute('UPDATE reminders SET fulfilled = 1 WHERE id = ?', [id]);
+}
+
+// ---- Site settings (key/value, site-wide — not guild-scoped) ----
+async function getSiteSetting(key) {
+  const [rows] = await pool.execute('SELECT setting_value FROM site_settings WHERE setting_key = ?', [key]);
+  return rows[0]?.setting_value ?? null;
+}
+
+async function setSiteSetting(key, value) {
+  await pool.execute(
+    'INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)',
+    [key, value]
+  );
+}
+
 // ---- VIP codes ----
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — avoids ambiguous codes
 
@@ -760,7 +861,8 @@ async function deleteVipCode(id) {
 function vipExpiryFor(duration) {
   if (duration === 'lifetime') return null;
   const d = new Date();
-  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  if (duration === 'month') d.setUTCMonth(d.getUTCMonth() + 1);
+  else d.setUTCFullYear(d.getUTCFullYear() + 1);
   return d.toISOString().slice(0, 19).replace('T', ' ');
 }
 
@@ -803,13 +905,26 @@ async function getVipStats() {
   const [[guildStats]] = await pool.query(`
     SELECT COUNT(*) AS active
     FROM guild_config
-    WHERE vip_tier = 'lifetime' OR (vip_tier = 'year' AND vip_expires_at > UTC_TIMESTAMP())
+    WHERE vip_tier = 'lifetime' OR (vip_tier IN ('year', 'month') AND vip_expires_at > UTC_TIMESTAMP())
   `);
   return {
     totalCodes: Number(codeStats.total) || 0,
     redeemedCodes: Number(codeStats.redeemed) || 0,
     activeVipServers: Number(guildStats.active) || 0,
   };
+}
+
+// Servers whose non-lifetime VIP expires within the next `days` days —
+// used by the scheduler to post a renewal reminder before it lapses.
+async function getGuildsWithExpiringVip(days = 7) {
+  const [rows] = await pool.query(
+    `SELECT guild_id, vip_tier, vip_expires_at FROM guild_config
+     WHERE vip_tier IN ('year', 'month')
+       AND vip_expires_at > UTC_TIMESTAMP()
+       AND vip_expires_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY)`,
+    [days]
+  );
+  return rows;
 }
 
 // ---- Admin audit log (website admin panel actions) ----
@@ -850,6 +965,7 @@ module.exports = {
   addXp,
   getLeaderboard,
   getRank,
+  resetXp,
   getStarboardPost,
   upsertStarboardPost,
   createTicket,
@@ -878,6 +994,7 @@ module.exports = {
   getSuggestions,
   setSuggestionStatus,
   getSuggestionById,
+  getSuggestionByMessage,
   addModNote,
   getModNotes,
   getAllModNotes,
@@ -902,6 +1019,7 @@ module.exports = {
   addLevelRole,
   getLevelRoles,
   deleteLevelRole,
+  vipExpiryFor,
   generateVipCodes,
   getVipCodes,
   getVipCodeByCode,
@@ -910,6 +1028,18 @@ module.exports = {
   grantVip,
   revokeVip,
   getVipStats,
+  getGuildsWithExpiringVip,
   logAdminAction,
   getAdminAuditLog,
+  getWarningsPage,
+  getWarningsForUser,
+  getModNotesForUser,
+  getModActionsPage,
+  getModActionsForUser,
+  getReactionRolesByGroup,
+  addReminder,
+  getDueReminders,
+  markReminderFulfilled,
+  getSiteSetting,
+  setSiteSetting,
 };

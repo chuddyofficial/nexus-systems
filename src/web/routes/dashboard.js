@@ -7,13 +7,17 @@ const { ensureOwner, isOwner } = require('../middleware/ensureOwner');
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   const client = req.app.locals.discordClient;
+  const maintenanceEnabled = (await db.getSiteSetting('maintenance_mode')) === '1';
+  const maintenanceMessage = (await db.getSiteSetting('maintenance_message')) || '';
   res.render('home', {
     user: req.user || null,
     botTag: client.user?.tag ?? 'Bot',
     guildCount: client.guilds.cache.size,
     inviteUrl: `https://discord.com/api/oauth2/authorize?client_id=${config.clientId}&permissions=1099511627775&scope=bot%20applications.commands`,
+    maintenanceEnabled,
+    maintenanceMessage,
   });
 });
 

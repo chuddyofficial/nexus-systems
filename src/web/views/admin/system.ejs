@@ -16,6 +16,15 @@
         <div class="stat-tile"><div class="stat-value" id="stat-node">—</div><div class="stat-label">Node Version</div></div>
       </div>
 
+      <div class="card" style="border-color:var(--red);">
+        <div class="toggle-row">
+          <div><div class="toggle-label">🔧 Maintenance Banner</div><div class="toggle-desc">Shows a banner on the public homepage. Doesn't block logins or the dashboard.</div></div>
+          <label class="switch"><input type="checkbox" id="maintenance-enabled" /><span class="slider"></span></label>
+        </div>
+        <div class="field" style="margin-top:14px;"><label>Message</label><input type="text" id="maintenance-message" placeholder="Some features may be temporarily unavailable." /></div>
+        <button class="btn btn-primary" id="save-maintenance">Save</button>
+      </div>
+
       <div class="card">
         <h2>Re-deploy Slash Commands</h2>
         <p class="card-desc">Re-registers every slash command with Discord. Needed after a command's options change (like a recent update to <span class="mono">/ticket</span>).</p>
@@ -27,6 +36,11 @@
         <h2>Restart Bot Process</h2>
         <p class="card-desc">Restarts the entire bot + dashboard process. It comes back up automatically within a few seconds — you'll be logged out briefly.</p>
         <button class="btn btn-danger" id="restart-btn">♻️ Restart Now</button>
+      </div>
+
+      <div class="card">
+        <h2>Version</h2>
+        <p class="card-desc mono" id="version-info">—</p>
       </div>
     </main>
   </div>

@@ -47,7 +47,37 @@ async function performWarn(guild, targetUser, moderator, reason) {
   const warning = await db.addWarning(guild.id, targetUser.id, moderator.id, reason);
   await db.logModAction(guild.id, targetUser.id, moderator.id, 'warn', reason);
   await sendModLog(guild, { action: 'Warn', target: targetUser, moderator, reason, color: 0xfee75c });
+
+  const cfg = await db.getGuildConfig(guild.id);
+  if (cfg.warn_escalation_enabled) {
+    const warnings = await db.getWarnings(guild.id, targetUser.id);
+    if (warnings.length === cfg.warn_escalation_threshold) {
+      const escalationReason = `Reached ${warnings.length} warnings (auto-escalation)`;
+      const member = await guild.members.fetch(targetUser.id).catch(() => null);
+      if (member) {
+        try {
+          if (cfg.warn_escalation_action === 'kick') {
+            await performKick(guild, member, guild.client.user, escalationReason);
+          } else if (cfg.warn_escalation_action === 'ban') {
+            await performBan(guild, targetUser, guild.client.user, escalationReason);
+          } else {
+            await performTimeout(guild, member, guild.client.user, cfg.warn_escalation_timeout_minutes * 60_000, escalationReason);
+          }
+        } catch {
+          // Missing permissions to escalate — the warning itself still landed.
+        }
+      }
+    }
+  }
+
   return warning;
+}
+
+async function performSoftban(guild, targetUser, moderator, reason, deleteMessageSeconds = 86400) {
+  await guild.members.ban(targetUser.id, { reason, deleteMessageSeconds });
+  await guild.members.unban(targetUser.id, 'Softban — messages purged, user not actually banned').catch(() => {});
+  await db.logModAction(guild.id, targetUser.id, moderator.id, 'softban', reason);
+  await sendModLog(guild, { action: 'Softban (message purge)', target: targetUser, moderator, reason, color: 0xed4245 });
 }
 
 async function performTempBan(guild, targetUser, moderator, reason, durationMs, deleteMessageSeconds = 0) {
@@ -74,5 +104,6 @@ module.exports = {
   performTimeout,
   performUntimeout,
   performWarn,
+  performSoftban,
   performTempBan,
 };

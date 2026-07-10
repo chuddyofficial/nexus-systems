@@ -16,10 +16,30 @@
       document.getElementById('stat-uptime').textContent = formatUptime(stats.uptimeMs);
       document.getElementById('stat-memory').textContent = formatBytes(stats.memory.rss);
       document.getElementById('stat-node').textContent = stats.nodeVersion;
+      document.getElementById('version-info').textContent = `Nexus Systems v${stats.botVersion} — Node ${stats.nodeVersion} — PID ${stats.pid}`;
+
+      const maintenance = await api('/api/admin/maintenance');
+      document.getElementById('maintenance-enabled').checked = maintenance.enabled;
+      document.getElementById('maintenance-message').value = maintenance.message;
     } catch (err) {
       toast(err.message, 'error');
     }
   }
+
+  document.getElementById('save-maintenance').addEventListener('click', async () => {
+    try {
+      await api('/api/admin/maintenance', {
+        method: 'POST',
+        body: {
+          enabled: document.getElementById('maintenance-enabled').checked,
+          message: document.getElementById('maintenance-message').value,
+        },
+      });
+      toast('Maintenance settings saved.');
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  });
 
   document.getElementById('redeploy-btn').addEventListener('click', async () => {
     const btn = document.getElementById('redeploy-btn');
@@ -50,4 +70,5 @@
   });
 
   load();
+  setInterval(load, 30_000);
 })();

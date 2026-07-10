@@ -7,14 +7,22 @@
     <main class="main">
       <div class="page-header">
         <h1>Moderation Log</h1>
-        <p>Most recent 200 moderation actions in <strong><%= guild.name %></strong>.</p>
+        <p>Every moderation action in <strong><%= guild.name %></strong>.</p>
       </div>
+      <div class="card">
+        <div class="row">
+          <div class="field" style="flex:1;"><input type="text" id="modlog-search" placeholder="Filter by user ID, moderator ID, or action type..." /></div>
+          <button class="btn" id="modlog-export" style="flex:0 0 auto;">⬇️ Export CSV</button>
+        </div>
+      </div>
+
       <div class="card">
         <table>
           <thead><tr><th>Action</th><th>User</th><th>Moderator</th><th>Reason</th><th>When</th></tr></thead>
           <tbody id="modlog-body"></tbody>
         </table>
         <div id="modlog-empty" class="empty-state" style="display:none;">No moderation actions yet.</div>
+        <button class="btn" id="modlog-load-more" style="display:none;margin-top:14px;">Load More</button>
       </div>
     </main>
   </div>

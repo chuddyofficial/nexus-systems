@@ -3,6 +3,9 @@ const { runAutomod } = require('../automod');
 const { buildEmbedFromData, replacePlaceholders } = require('../utils/embedBuilder');
 const { awardMessageXp } = require('../utils/leveling');
 
+// In-memory per-guild-per-trigger cooldown tracker: Map<"guildId:trigger", timestamp>
+const commandCooldowns = new Map();
+
 module.exports = {
   name: 'messageCreate',
   async execute(message) {
@@ -25,6 +28,14 @@ module.exports = {
 
     const cmd = await db.getCustomCommand(message.guild.id, trigger);
     if (!cmd) return;
+
+    if (cmd.cooldown_seconds > 0) {
+      const key = `${message.guild.id}:${trigger}`;
+      const now = Date.now();
+      const last = commandCooldowns.get(key) ?? 0;
+      if (now - last < cmd.cooldown_seconds * 1000) return;
+      commandCooldowns.set(key, now);
+    }
 
     const payload = {};
     if (cmd.response) payload.content = replacePlaceholders(cmd.response, { user: message.author, guild: message.guild });
