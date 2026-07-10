@@ -101,6 +101,15 @@ function createServer(client) {
     };
     bus.on('console', onConsole);
 
+    // Site-wide admin broadcasts (payload.guildId === null) go to every
+    // connected socket; single-server broadcasts only reach sockets
+    // currently subscribed to that server's dashboard.
+    const onAnnouncement = (payload) => {
+      if (payload.guildId && socket.data.guildId !== payload.guildId) return;
+      socket.emit('announcement', payload);
+    };
+    bus.on('announcement', onAnnouncement);
+
     socket.on('subscribe', (guildId) => {
       socket.data.guildId = guildId;
       // Immediate proof-of-life so the console never looks silently dead —
@@ -115,6 +124,7 @@ function createServer(client) {
 
     socket.on('disconnect', () => {
       bus.off('console', onConsole);
+      bus.off('announcement', onAnnouncement);
     });
   });
 

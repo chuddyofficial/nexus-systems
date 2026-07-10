@@ -7,4 +7,10 @@ const { EventEmitter } = require('node:events');
  */
 class BotEventBus extends EventEmitter {}
 
-module.exports = new BotEventBus();
+const bus = new BotEventBus();
+// Each connected dashboard socket adds a 'console' and 'announcement'
+// listener — the default cap of 10 would trip MaxListenersExceededWarning
+// with more than ~5 concurrent sessions.
+bus.setMaxListeners(0);
+
+module.exports = bus;

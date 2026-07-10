@@ -461,6 +461,26 @@ tbody tr:hover { background: var(--bg-elevated); }
 .toast.error { border-color: rgba(237,66,69,0.4); }
 @keyframes slide-in { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+/* ---------- Site-wide announcement banner ---------- */
+.announcement-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  z-index: 1200;
+  max-width: min(640px, calc(100vw - 32px));
+  background: var(--brand-gradient);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 34px rgba(88, 101, 242, 0.45);
+  padding: 14px 20px;
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  pointer-events: none;
+}
+.announcement-banner.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+.announcement-content { display: flex; align-items: flex-start; gap: 10px; color: #fff; font-size: 14px; line-height: 1.4; }
+.announcement-icon { font-size: 18px; flex: 0 0 auto; }
+
 /* ---------- Misc ---------- */
 .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .tag-chip { display: flex; align-items: center; gap: 8px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 13px; }

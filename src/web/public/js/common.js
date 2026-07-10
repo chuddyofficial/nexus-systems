@@ -176,6 +176,40 @@ function initThemeToggle(buttonEl) {
   }
 }
 
+// ---------- Shared realtime socket + announcement banner ----------
+// One Socket.IO connection per page, shared between the live console and
+// site-wide/per-server admin announcements — avoids opening a second
+// redundant connection on the console page.
+let sharedSocket = null;
+function getSocket() {
+  if (sharedSocket || typeof io === 'undefined') return sharedSocket;
+  sharedSocket = io({ reconnectionAttempts: 20 });
+  sharedSocket.on('connect', () => {
+    if (window.GUILD_ID) sharedSocket.emit('subscribe', window.GUILD_ID);
+  });
+  sharedSocket.on('announcement', (payload) => showAnnouncementBanner(payload));
+  return sharedSocket;
+}
+
+let bannerHideTimer = null;
+function showAnnouncementBanner(payload) {
+  let banner = document.getElementById('announcement-banner');
+  if (!banner) {
+    banner = el('div', { id: 'announcement-banner', class: 'announcement-banner' });
+    document.body.appendChild(banner);
+  }
+  banner.innerHTML = '';
+  banner.appendChild(
+    el('div', { class: 'announcement-content' }, [
+      el('span', { class: 'announcement-icon' }, '📢'),
+      el('span', {}, [el('strong', {}, payload.title ? `${payload.title}: ` : ''), payload.message || '']),
+    ])
+  );
+  banner.classList.add('show');
+  clearTimeout(bannerHideTimer);
+  bannerHideTimer = setTimeout(() => banner.classList.remove('show'), 10_000);
+}
+
 // ---------- Command palette (Ctrl/Cmd+K) ----------
 function initCommandPalette(guildId) {
   const pages = [
@@ -330,6 +364,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const lockdownBtn = document.getElementById('lockdown-toggle-btn');
     if (lockdownBtn) initLockdownToggle(lockdownBtn, window.GUILD_ID);
   }
+
+  // Only authenticated dashboard pages open a socket — a public visitor on
+  // the homepage or login page would just get connected-then-disconnected
+  // (no session) and keep retrying forever for nothing.
+  if (window.DASHBOARD_ACTIVE) getSocket();
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== '?' || e.ctrlKey || e.metaKey) return;

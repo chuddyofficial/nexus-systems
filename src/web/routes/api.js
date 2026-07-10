@@ -10,6 +10,7 @@ const { ensureOwnerApi } = require('../middleware/ensureOwner');
 const { buildEmbedFromData } = require('../../bot/utils/embedBuilder');
 const { performBan, performKick, performTimeout, performWarn, performTempBan } = require('../../bot/utils/modActions');
 const { endGiveawayNow, rerollGiveaway } = require('../../bot/utils/giveaways');
+const { sendAnnouncementToGuild, broadcastSiteWideBanner } = require('../../bot/utils/announcements');
 const { isSnowflake } = require('../utils/validate');
 
 const router = express.Router();
@@ -877,6 +878,15 @@ router.post('/admin/broadcast', async (req, res) => {
       ];
     }
     await channel.send(payload);
+    // Beyond the chosen channel, every broadcast also DMs the server owner,
+    // posts a distinctly-styled copy to the mod log, and pushes a live
+    // banner to anyone currently viewing that server's dashboard.
+    await sendAnnouncementToGuild(guild, {
+      title: embedTitle?.trim() || 'Announcement',
+      description: embedDescription?.trim() || content?.trim(),
+      color: embedColor,
+      skipModLogChannelId: channelId,
+    });
     await db.logAdminAction(req.user.id, 'broadcast', `Sent to #${channel.name} in "${guild.name}" (${guild.id})`);
     res.json({ ok: true });
   } catch (err) {
@@ -884,40 +894,31 @@ router.post('/admin/broadcast', async (req, res) => {
   }
 });
 
-// Best-effort broadcast to every server's mod log channel (skips any server
-// that hasn't configured one — there's no single "announcements" channel
-// guaranteed to exist across every guild).
+// Broadcasts to every server the bot is in: DMs each server's owner, posts
+// a distinctly-styled announcement to each server's mod log (if configured),
+// and pushes a site-wide live banner to every connected dashboard visitor.
 router.post('/admin/broadcast-all', async (req, res) => {
   const { content, embedTitle, embedDescription, embedColor } = req.body;
   if (!content?.trim() && !embedDescription?.trim()) return res.status(400).json({ error: 'Provide a message or an embed description' });
   const client = req.app.locals.discordClient;
 
-  const payload = {};
-  if (content?.trim()) payload.content = content.trim();
-  if (embedDescription?.trim()) {
-    payload.embeds = [
-      new EmbedBuilder().setTitle(embedTitle?.trim() || null).setDescription(embedDescription.trim()).setColor(embedColor || config.brandColor),
-    ];
-  }
+  const announcementBody = { title: embedTitle?.trim() || 'Announcement', description: embedDescription?.trim() || content?.trim(), color: embedColor };
 
   let sent = 0;
-  let skipped = 0;
+  let failed = 0;
   for (const guild of client.guilds.cache.values()) {
-    const cfg = await db.getGuildConfig(guild.id).catch(() => null);
-    const channel = cfg?.mod_log_channel ? guild.channels.cache.get(cfg.mod_log_channel) : null;
-    if (!channel?.isTextBased()) {
-      skipped++;
-      continue;
-    }
     try {
-      await channel.send(payload);
+      await sendAnnouncementToGuild(guild, { ...announcementBody, skipBanner: true });
       sent++;
     } catch {
-      skipped++;
+      failed++;
     }
   }
-  await db.logAdminAction(req.user.id, 'broadcast_all', `Sent to ${sent} server(s), skipped ${skipped}`);
-  res.json({ ok: true, sent, skipped });
+  // One site-wide banner for the whole broadcast, not one per server.
+  broadcastSiteWideBanner(announcementBody);
+
+  await db.logAdminAction(req.user.id, 'broadcast_all', `Sent to ${sent} server(s), failed ${failed}`);
+  res.json({ ok: true, sent, skipped: failed });
 });
 
 router.post('/admin/redeploy-commands', (req, res) => {

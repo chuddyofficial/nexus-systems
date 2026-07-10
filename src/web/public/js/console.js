@@ -20,14 +20,20 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  if (typeof io === 'undefined') {
+  const socket = getSocket();
+  if (!socket) {
     setStatus('error', 'Failed to load the realtime client — check your connection and refresh.');
     return;
   }
 
-  const socket = io({ reconnectionAttempts: 20 });
-
   setStatus('connecting', 'Connecting...');
+  // The shared socket may already be connected (and already subscribed) by
+  // the time this page's script runs — reflect that immediately instead of
+  // waiting for a 'connect' event that already fired.
+  if (socket.connected) {
+    socket.emit('subscribe', gid);
+    setStatus('live', 'Live');
+  }
 
   socket.on('connect', () => {
     socket.emit('subscribe', gid);
