@@ -4,14 +4,18 @@
   <a href="/servers" class="brand" style="padding:2px 10px 14px 10px;font-size:14px;">
     <span class="dot"></span> Nexus Systems
   </a>
-  <div class="guild-name">
-    <% if (guild.iconURL && guild.iconURL()) { %>
-      <img src="<%= guild.iconURL() %>" alt="" />
-    <% } else { %>
-      <div class="icon-fallback" style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:13px;"><%= guild.name.slice(0,2).toUpperCase() %></div>
-    <% } %>
-    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= guild.name %></span>
-    <% if (typeof vip !== 'undefined' && vip && vip.active) { %><span title="VIP server" style="margin-left:4px;">💎</span><% } %>
+  <div class="guild-switcher">
+    <button class="guild-name" id="guild-switcher-btn" type="button">
+      <% if (guild.iconURL && guild.iconURL()) { %>
+        <img src="<%= guild.iconURL() %>" alt="" />
+      <% } else { %>
+        <div class="icon-fallback" style="width:32px;height:32px;border-radius:50%;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:13px;"><%= guild.name.slice(0,2).toUpperCase() %></div>
+      <% } %>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><%= guild.name %></span>
+      <% if (typeof vip !== 'undefined' && vip && vip.active) { %><span title="VIP server" style="margin-left:2px;">💎</span><% } %>
+      <span class="switcher-chevron">▾</span>
+    </button>
+    <div class="guild-switcher-menu" id="guild-switcher-menu"></div>
   </div>
 
   <div class="sidebar-tools">

@@ -126,13 +126,32 @@ function safeJsonParse(str, fallback) {
   }
 }
 
+// getGuildConfig is called on nearly every request (every dashboard page
+// load, plus every message for automod/leveling checks), so it's cached
+// in-process per guild for a short TTL. Every write path below calls
+// invalidateConfigCache() first so a save is reflected immediately rather
+// than waiting out the TTL — this is a single-process deployment (one
+// systemd service, no horizontal scaling), so there's no cross-instance
+// staleness to worry about.
+const configCache = new Map(); // guildId -> { data, expiresAt }
+const CONFIG_CACHE_TTL_MS = 15_000;
+
+function invalidateConfigCache(guildId) {
+  configCache.delete(guildId);
+}
+
 async function getGuildConfig(guildId) {
+  const cached = configCache.get(guildId);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
   let [rows] = await pool.execute('SELECT * FROM guild_config WHERE guild_id = ?', [guildId]);
   if (!rows.length) {
     await pool.execute('INSERT INTO guild_config (guild_id, updated_at) VALUES (?, UTC_TIMESTAMP())', [guildId]);
     [rows] = await pool.execute('SELECT * FROM guild_config WHERE guild_id = ?', [guildId]);
   }
-  return normalizeConfig(rows[0]);
+  const normalized = normalizeConfig(rows[0]);
+  configCache.set(guildId, { data: normalized, expiresAt: Date.now() + CONFIG_CACHE_TTL_MS });
+  return normalized;
 }
 
 async function updateGuildConfig(guildId, patch) {
@@ -154,6 +173,7 @@ async function updateGuildConfig(guildId, patch) {
   cols.push('updated_at = UTC_TIMESTAMP()');
   values.push(guildId);
   await pool.execute(`UPDATE guild_config SET ${cols.join(', ')} WHERE guild_id = ?`, values);
+  invalidateConfigCache(guildId);
   return getGuildConfig(guildId);
 }
 
@@ -886,6 +906,7 @@ async function grantVip(guildId, tier, expiresAt, code = null) {
     'UPDATE guild_config SET vip_tier = ?, vip_expires_at = ?, vip_code = ?, vip_granted_at = UTC_TIMESTAMP() WHERE guild_id = ?',
     [tier, tier === 'lifetime' ? null : expiresAt, code, guildId]
   );
+  invalidateConfigCache(guildId);
   return getGuildConfig(guildId);
 }
 
@@ -894,6 +915,7 @@ async function revokeVip(guildId) {
     'UPDATE guild_config SET vip_tier = NULL, vip_expires_at = NULL, vip_code = NULL, vip_granted_at = NULL WHERE guild_id = ?',
     [guildId]
   );
+  invalidateConfigCache(guildId);
   return getGuildConfig(guildId);
 }
 

@@ -189,6 +189,8 @@ h1, h2, h3 { letter-spacing: -0.015em; }
   -webkit-backdrop-filter: blur(24px) saturate(140%);
 }
 
+.guild-switcher { position: relative; margin-bottom: 10px; }
+
 .sidebar .guild-name {
   display: flex;
   align-items: center;
@@ -197,12 +199,52 @@ h1, h2, h3 { letter-spacing: -0.015em; }
   font-weight: 700;
   font-size: 15px;
   border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 10px;
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 0;
+  transition: color 0.15s ease;
 }
+.sidebar .guild-name:hover { color: var(--brand); }
 
 .sidebar .guild-name img {
   width: 32px; height: 32px; border-radius: 10px; background: var(--bg-card);
 }
+
+.switcher-chevron { margin-left: auto; font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
+
+.guild-switcher-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 10px;
+  right: 10px;
+  z-index: 60;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-pop);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+}
+.guild-switcher-menu.open { display: block; }
+.guild-switcher-menu .switcher-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm);
+  font-size: 13.5px; color: var(--text-muted); cursor: pointer;
+}
+.guild-switcher-menu .switcher-item:hover, .guild-switcher-menu .switcher-item.current { background: var(--bg-card-hover); color: var(--text); }
+.guild-switcher-menu .switcher-item img, .guild-switcher-menu .switcher-item .icon-fallback {
+  width: 22px; height: 22px; border-radius: 7px; flex-shrink: 0; background: var(--bg-elevated);
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+}
+.guild-switcher-menu .switcher-empty { padding: 10px; font-size: 12.5px; color: var(--text-faint); text-align: center; }
 
 .sidebar a.navlink {
   display: flex;

@@ -352,6 +352,56 @@ function showShortcutHelp(hasGuildNav) {
   overlay.onclick = (e) => { if (e.target === overlay) { overlay.classList.remove('open'); overlay.innerHTML = ''; } };
 }
 
+// ---------- Server quick-switcher (sidebar) ----------
+function initGuildSwitcher(buttonEl, menuEl, currentGuildId) {
+  let loaded = false;
+
+  function close() {
+    menuEl.classList.remove('open');
+  }
+
+  async function open() {
+    menuEl.classList.add('open');
+    if (loaded) return;
+    loaded = true;
+    menuEl.innerHTML = '';
+    menuEl.appendChild(el('div', { class: 'switcher-empty' }, 'Loading...'));
+    try {
+      const servers = (await api('/api/servers')).filter((s) => s.botPresent);
+      menuEl.innerHTML = '';
+      if (!servers.length) {
+        menuEl.appendChild(el('div', { class: 'switcher-empty' }, 'No other servers.'));
+        return;
+      }
+      for (const s of servers) {
+        const initials = s.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+        const icon = s.icon ? el('img', { src: s.icon, alt: '' }) : el('div', { class: 'icon-fallback' }, initials);
+        menuEl.appendChild(
+          el('a', { class: `switcher-item ${s.id === currentGuildId ? 'current' : ''}`, href: `/servers/${s.id}` }, [
+            icon,
+            el('span', { style: 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' }, s.name),
+          ])
+        );
+      }
+    } catch (err) {
+      menuEl.innerHTML = '';
+      menuEl.appendChild(el('div', { class: 'switcher-empty' }, err.message));
+      loaded = false;
+    }
+  }
+
+  buttonEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menuEl.classList.contains('open') ? close() : open();
+  });
+  document.addEventListener('click', (e) => {
+    if (!menuEl.contains(e.target)) close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const themeBtn = document.getElementById('theme-toggle-btn');
   if (themeBtn) initThemeToggle(themeBtn);
@@ -363,6 +413,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const lockdownBtn = document.getElementById('lockdown-toggle-btn');
     if (lockdownBtn) initLockdownToggle(lockdownBtn, window.GUILD_ID);
+
+    const switcherBtn = document.getElementById('guild-switcher-btn');
+    const switcherMenu = document.getElementById('guild-switcher-menu');
+    if (switcherBtn && switcherMenu) initGuildSwitcher(switcherBtn, switcherMenu, window.GUILD_ID);
   }
 
   // Only authenticated dashboard pages open a socket — a public visitor on
